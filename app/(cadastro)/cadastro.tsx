@@ -4,9 +4,28 @@ import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router } from 'expo-router';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { useState } from 'react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/firebase/firebaseConfig';
 
 
 export default function Recup() {
+ const [email, setEmail] = useState("");
+ const [senha, setSenha] = useState("");
+ const [error, setError] = useState("");
+
+ async function handleRegistro(){
+    setError("");
+    try {
+        await createUserWithEmailAndPassword(auth, email, senha);
+        router.push('./login');
+    } catch (err: any) {
+        setError("Erro ao criar conta: " + err.message);
+        alert(err.message);
+    }
+
+ }
+
  
     return (
         <View style={styles.background}>
@@ -28,19 +47,23 @@ export default function Recup() {
 
                     <View style={styles.Input}>
                         <MaterialCommunityIcons name="email-outline" size={20} color="black" style={{marginRight: 5}} />
-                        <TextInput maxLength={100} placeholderTextColor="#000000" placeholder="Email"></TextInput>
+                        <TextInput maxLength={100} placeholderTextColor="#000000" placeholder="Email"
+                        value = {email} 
+                        onChangeText={setEmail}></TextInput>
                     </View>
 
                     <View style={styles.Input}>
                         <Ionicons name="lock-closed-outline" size={20} color="black" style={{marginRight: 5}} />
-                        <TextInput  placeholderTextColor="#000000" placeholder="Senha"></TextInput>
+                        <TextInput  placeholderTextColor="#000000" placeholder="Senha"
+                        value = {senha} 
+                        onChangeText={setSenha}></TextInput>
                     </View>
 
 
                 </View>
                 <View>
                     <TouchableOpacity style={styles.Botao}>
-                        <Text style={styles.textoBotao}>cadastrar</Text>
+                        <Text style={styles.textoBotao} onPress={handleRegistro}>cadastrar</Text>
                     </TouchableOpacity>
                 </View>
             </View>
