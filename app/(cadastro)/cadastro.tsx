@@ -5,7 +5,9 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import { router } from 'expo-router';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 
+
 export default function Recup() {
+ 
     return (
         <View style={styles.background}>
             <View style={styles.segundaCamada}>
