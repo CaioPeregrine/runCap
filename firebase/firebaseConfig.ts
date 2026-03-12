@@ -1,5 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 
 // Copie esses dados do Firebase Console → Configurações do projeto → SDK Web
 const firebaseConfig = {
@@ -17,3 +19,5 @@ const app = initializeApp(firebaseConfig);
 
 // Exporta o serviço de autenticação
 export const auth = getAuth(app);
+export const storage = getStorage(app);
+export const db = getFirestore(app);
