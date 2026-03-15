@@ -1,23 +1,29 @@
+import { auth } from '@/firebase/firebaseConfig';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import Feather from '@expo/vector-icons/Feather';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import { router } from 'expo-router';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/firebase/firebaseConfig';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 
 export default function Recup() {
  const [email, setEmail] = useState("");
  const [senha, setSenha] = useState("");
+ const [nome, setNome] = useState("");
  const [error, setError] = useState("");
 
  async function handleRegistro(){
     setError("");
     try {
-        await createUserWithEmailAndPassword(auth, email, senha);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+        
+        // Adicionando o nome ao perfil do usuário
+        await updateProfile(userCredential.user, { displayName: nome });
+        
+        console.log("Usuário criado:", userCredential.user.uid);
         router.push('./login');
     } catch (err: any) {
         setError("Erro ao criar conta: " + err.message);
@@ -32,7 +38,7 @@ export default function Recup() {
             <View style={styles.segundaCamada}>
 
                 <View style={styles.ViewSuperior}>
-                    <TouchableOpacity onPress={() => router.push('/login')}>
+                    <TouchableOpacity onPress={() => router.push('./login')}>
                         <AntDesign name="arrow-left" size={24} color="black" />
                     </TouchableOpacity>
                 </View>
@@ -42,7 +48,9 @@ export default function Recup() {
                 <View style={styles.TerceiraCamada}>
                     <View style={styles.Input}>
                         <Feather  name="user" size={20} color="black" style={{marginRight: 5}} />
-                        <TextInput maxLength={100} placeholderTextColor="#000000" placeholder="Nome do usuário"></TextInput>
+                        <TextInput maxLength={100} placeholderTextColor="#000000" placeholder="Nome do usuário"
+                        value={nome}
+                        onChangeText={setNome}></TextInput>
                     </View>
 
                     <View style={styles.Input}>
