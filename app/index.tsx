@@ -6,7 +6,7 @@ export default function Index() {
     return (
         <View style={styles.background}>
             <View>
-                <TouchableOpacity style={styles.botao} onPress={() => router.push('/login')}>
+                <TouchableOpacity style={styles.botao} onPress={() => router.push('/auth/login')}>
                     <Text style={{ color: "#fff", fontSize: 18 }}>Ir para Login</Text>
                 </TouchableOpacity>
             </View>
