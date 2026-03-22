@@ -96,7 +96,7 @@ export default function AdicionarAmigos() {
       async (snap) => {
         const data = snap.data();
         if (!data) return;
-        setMeuId(data.codigoId || currentUser.uid.slice(0, 8).toUpperCase());
+        setMeuId(data.codigoId || "");
 
         const amigosIds: string[] = data.amigos || [];
         const amigosData = await Promise.all(

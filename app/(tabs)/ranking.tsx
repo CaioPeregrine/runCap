@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   StatusBar,
+  Image,
 } from "react-native";
 import { db } from "@/firebase/firebaseConfig";
 import {
@@ -19,6 +20,7 @@ import {
   where,
   doc,
   getDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { router } from "expo-router";
@@ -31,6 +33,7 @@ type RankingUser = {
   totalKm: number;
   nivel: number;
   status: "online" | "offline" | "correndo";
+  avatarUrl: string | null;
 };
 
 const STATUS_COLOR = {
@@ -44,10 +47,12 @@ function Avatar({
   nome,
   size = 44,
   status,
+  avatarUrl,
 }: {
   nome: string;
   size?: number;
   status?: "online" | "offline" | "correndo";
+  avatarUrl?: string | null;
 }) {
   const initials = nome.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
   const colors = ["#5E5CE6", "#30D158", "#FF9F0A", "#FF375F", "#64D2FF"];
@@ -60,10 +65,20 @@ function Avatar({
         backgroundColor: colors[colorIndex],
         alignItems: "center", justifyContent: "center",
         borderWidth: 2, borderColor: "#fff",
+        overflow: "hidden",
       }}>
-        <Text style={{ color: "#FFF", fontWeight: "700", fontSize: size * 0.35 }}>
-          {initials}
-        </Text>
+        {avatarUrl ? (
+          // Foto do Storage — atualiza automaticamente quando o usuário troca
+          <Image
+            source={{ uri: avatarUrl }}
+            style={{ width: size, height: size, borderRadius: size / 2 }}
+          />
+        ) : (
+          // Fallback: iniciais coloridas
+          <Text style={{ color: "#FFF", fontWeight: "700", fontSize: size * 0.35 }}>
+            {initials}
+          </Text>
+        )}
       </View>
       {status && (
         <View style={{
@@ -92,10 +107,10 @@ function Podium({ users }: { users: RankingUser[] }) {
 
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end" }}>
-        <Avatar nome={user.nome} size={isFirst ? 62 : 50} status={user.status} />
+        <Avatar nome={user.nome} size={isFirst ? 62 : 50} status={user.status} avatarUrl={user.avatarUrl} />
         <Text style={{
           color: "#1B2B5E", fontWeight: "700",
-          fontSize: isFirst ? 14 : 12, marginTop: 6, textAlign: "center",
+          fontSize: isFirst ? 14 : 12, marginTop: 2, textAlign: "center",
         }} numberOfLines={1}>
           {user.nome.split(" ")[0]}
         </Text>
@@ -106,7 +121,7 @@ function Podium({ users }: { users: RankingUser[] }) {
           width: "80%", height: podiumHeight,
           backgroundColor: isFirst ? "#ffffff" : "#E0E0E0",
           borderTopLeftRadius: 8, borderTopRightRadius: 8,
-          alignItems: "center", justifyContent: "flex-start", paddingTop: 8,
+          alignItems: "center", justifyContent: "flex-start", paddingTop: 2,
           elevation: isFirst ? 4 : 2,
         }}>
           <Text style={{ fontSize: isFirst ? 22 : 18 }}>{medals[position - 1]}</Text>
@@ -121,7 +136,7 @@ function Podium({ users }: { users: RankingUser[] }) {
   return (
     <View style={{
       flexDirection: "row", alignItems: "flex-end",
-      paddingHorizontal: 16, height: 210, marginBottom: 8,
+      paddingHorizontal: 10,height: 210, marginBottom: 5,marginTop:28
     }}>
       <PodiumItem user={second} position={2} podiumHeight={90} />
       <PodiumItem user={first}  position={1} podiumHeight={130} />
@@ -137,7 +152,7 @@ function RankItem({ user, position, isAmigos }: {
   return (
     <View style={styles.rankItem}>
       <Text style={styles.rankPosition}>{position}°</Text>
-      <Avatar nome={user.nome} size={40} status={isAmigos ? user.status : undefined} />
+      <Avatar nome={user.nome} size={40} status={isAmigos ? user.status : undefined} avatarUrl={user.avatarUrl} />
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={styles.rankName} numberOfLines={1}>{user.nome}</Text>
         {isAmigos && (
@@ -160,58 +175,159 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
   const tabAnim = useRef(new Animated.Value(0)).current;
   const currentUser = getAuth().currentUser;
 
-  async function fetchRegional() {
-    try {
-      const snap = await getDocs(
-        query(collection(db, "corridas"), orderBy("distancia_km", "desc"), limit(50))
-      );
-      const map: Record<string, { totalKm: number; uid: string }> = {};
-      snap.forEach((d) => {
-        const data = d.data();
-        const uid = data.uid || d.id;
-        if (!map[uid]) map[uid] = { totalKm: 0, uid };
-        map[uid].totalKm += data.distancia_km || 0;
-      });
-      const users: RankingUser[] = await Promise.all(
-        Object.values(map).sort((a, b) => b.totalKm - a.totalKm).slice(0, 10)
-          .map(async ({ uid, totalKm }) => {
-            const d = await getDoc(doc(db, "usuarios", uid));
-            const u = d.data();
-            return { id: uid, nome: u?.nome || "Corredor", totalKm, nivel: u?.nivel || 1, status: u?.status || "offline" };
-          })
-      );
-      setRegionalUsers(users);
-    } catch (e) { console.error(e); }
-  }
+  // ── Ranking Regional — tempo real ─────────────────────────────────────────
+  useEffect(() => {
+    // Escuta TODAS as corridas sem filtro de uid
+    // para poder agrupar por corredor e somar o total de km de cada um
+    const q = query(collection(db, "corridas"));
 
-  async function fetchAmigos() {
+    const unsub = onSnapshot(q, async (snap) => {
+      try {
+        // Agrupa corridas por uid somando km total de cada corredor
+        const map: Record<string, { totalKm: number; uid: string }> = {};
+        // Debug: mostra quantas corridas foram encontradas
+        console.log("Total de corridas encontradas:", snap.size);
+
+        snap.forEach((d) => {
+          const data = d.data();
+          const uid = data.uid;
+
+          if (!uid) {
+            console.warn("Corrida sem uid — id do doc:", d.id, "| campos:", Object.keys(data));
+            return;
+          }
+
+          if (!map[uid]) map[uid] = { totalKm: 0, uid };
+          map[uid].totalKm += data.distancia_km || 0;
+        });
+
+        console.log("Corredores únicos encontrados:", Object.keys(map).length);
+
+        // Ordena por totalKm e pega top 10
+        const sorted = Object.values(map)
+          .sort((a, b) => b.totalKm - a.totalKm)
+          .slice(0, 10);
+
+        // Busca dados de cada corredor no Firestore
+        const users: RankingUser[] = await Promise.all(
+          sorted.map(async ({ uid, totalKm }) => {
+            try {
+              const d = await getDoc(doc(db, "usuarios", uid));
+              const u = d.data();
+              return {
+                id: uid,
+                nome: u?.nome || "Corredor",
+                totalKm,
+                nivel: u?.nivel || 1,
+                status: u?.status || "offline",
+                avatarUrl: u?.avatarUrl || null,
+              };
+            } catch {
+              // Se não encontrar o usuário, retorna placeholder
+              return {
+                id: uid,
+                nome: "Corredor",
+                totalKm,
+                nivel: 1,
+                status: "offline" as const,
+                avatarUrl: null,
+              };
+            }
+          })
+        );
+
+        setRegionalUsers(users);
+      } catch (e) { console.error("Erro regional:", e); }
+      finally { setLoading(false); }
+    });
+
+    return unsub;
+  }, []);
+
+  // ── Ranking Amigos — tempo real ────────────────────────────────────────────
+  // Escuta o documento do usuário para detectar mudanças na lista de amigos,
+  // e escuta a coleção "corridas" de cada amigo para atualizar km em tempo real.
+  useEffect(() => {
     if (!currentUser) return;
-    try {
-      const userDoc = await getDoc(doc(db, "usuarios", currentUser.uid));
-      const amigosIds: string[] = userDoc.data()?.amigos || [];
-      if (!amigosIds.length) { setAmigosUsers([]); return; }
-      const ids = [currentUser.uid, ...amigosIds];
-      const users: RankingUser[] = await Promise.all(
-        ids.map(async (uid) => {
-          const uDoc = await getDoc(doc(db, "usuarios", uid));
-          const uData = uDoc.data();
-          const cSnap = await getDocs(query(collection(db, "corridas"), where("uid", "==", uid)));
-          let totalKm = 0;
-          cSnap.forEach((d) => { totalKm += d.data().distancia_km || 0; });
-          return { id: uid, nome: uData?.nome || "Corredor", totalKm, nivel: uData?.nivel || 1, status: uData?.status || "offline" };
-        })
-      );
-      setAmigosUsers(users.sort((a, b) => b.totalKm - a.totalKm));
-    } catch (e) { console.error(e); }
-  }
+
+    // Primeiro escuta o documento do usuário para pegar a lista de amigos
+    const unsubUser = onSnapshot(doc(db, "usuarios", currentUser.uid), async (userSnap) => {
+      try {
+        const amigosIds: string[] = userSnap.data()?.amigos || [];
+        const ids = [currentUser.uid, ...amigosIds];
+
+        // Para cada id, busca dados do usuário + soma corridas
+        const users: RankingUser[] = await Promise.all(
+          ids.map(async (uid) => {
+            const uDoc = await getDoc(doc(db, "usuarios", uid));
+            const uData = uDoc.data();
+
+            const cSnap = await getDocs(
+              query(collection(db, "corridas"), where("uid", "==", uid))
+            );
+            let totalKm = 0;
+            cSnap.forEach((d) => { totalKm += d.data().distancia_km || 0; });
+
+            return {
+              id: uid,
+              nome: uData?.nome || "Corredor",
+              totalKm,
+              nivel: uData?.nivel || 1,
+              status: uData?.status || "offline",
+              avatarUrl: uData?.avatarUrl || null,
+            };
+          })
+        );
+
+        setAmigosUsers(users.sort((a, b) => b.totalKm - a.totalKm));
+      } catch (e) { console.error(e); }
+    });
+
+    return unsubUser;
+  }, [currentUser?.uid]);
+
+  // ── Escuta mudanças de avatar/status dos usuários em tempo real ────────────
+  // Sempre que um usuário atualiza o avatar ou status no Firestore,
+  // o ranking reflete a mudança sem precisar reabrir a tela.
+  useEffect(() => {
+    if (regionalUsers.length === 0) return;
+
+    const unsubs = regionalUsers.map((u) =>
+      onSnapshot(doc(db, "usuarios", u.id), (snap) => {
+        const data = snap.data();
+        if (!data) return;
+        setRegionalUsers((prev) =>
+          prev.map((user) =>
+            user.id === u.id
+              ? { ...user, avatarUrl: data.avatarUrl || null, status: data.status || "offline", nome: data.nome || user.nome }
+              : user
+          )
+        );
+      })
+    );
+
+    return () => unsubs.forEach((u) => u());
+  }, [regionalUsers.length]);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      await Promise.all([fetchRegional(), fetchAmigos()]);
-      setLoading(false);
-    })();
-  }, []);
+    if (amigosUsers.length === 0) return;
+
+    const unsubs = amigosUsers.map((u) =>
+      onSnapshot(doc(db, "usuarios", u.id), (snap) => {
+        const data = snap.data();
+        if (!data) return;
+        setAmigosUsers((prev) =>
+          prev.map((user) =>
+            user.id === u.id
+              ? { ...user, avatarUrl: data.avatarUrl || null, status: data.status || "offline", nome: data.nome || user.nome }
+              : user
+          )
+        );
+      })
+    );
+
+    return () => unsubs.forEach((u) => u());
+  }, [amigosUsers.length]);
 
   function switchTab(t: "regional" | "amigos") {
     setTab(t);
@@ -225,22 +341,10 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
   const tabLeft = tabAnim.interpolate({ inputRange: [0, 1], outputRange: ["2%", "52%"] });
 
   return (
-    /*
-      ESTRUTURA:
-      ┌─────────────────────────┐
-      │  blueBlock (zIndex: 10) │  ← azul fica SEMPRE na frente
-      │  título + tabs          │
-      └─────────────────────────┘
-      ┌─────────────────────────┐
-      │  ScrollView (zIndex: 1) │  ← conteúdo atrás do azul
-      │   Podium                │
-      │   RankItem 4°...        │
-      └─────────────────────────┘
-    */
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1B2B5E" />
+      <StatusBar barStyle="light-content" backgroundColor="#2C3F69" />
 
-      {/* BLOCO AZUL — zIndex alto garante que fica na frente de tudo */}
+      {/* BLOCO AZUL */}
       <View style={styles.blueBlock}>
         <Text style={styles.title}>Ranking</Text>
 
@@ -255,7 +359,7 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
         </View>
       </View>
 
-      {/* CONTEÚDO — renderizado logo abaixo do blueBlock no DOM */}
+      {/* CONTEÚDO */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Carregando...</Text>
@@ -272,10 +376,8 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
           style={styles.scrollView}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Pódio — primeiro item do scroll, aparece direto abaixo do azul */}
           <Podium users={top3} />
 
-          {/* Lista 4+ */}
           {rest.map((u, i) => (
             <RankItem key={u.id} user={u} position={i + 4} isAmigos={tab === "amigos"} />
           ))}
@@ -283,7 +385,7 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
       )}
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => router.push("/adicionarAmigos")}>
+      <TouchableOpacity style={styles.fab} onPress={() => router.push("/(drawer)/adicionarAmigos")}>
         <Text style={styles.fabIcon}>👥+</Text>
       </TouchableOpacity>
     </View>
@@ -296,23 +398,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2F4F8",
   },
 
-  // ─── CHAVE DO PROBLEMA ───────────────────────────────────────────────────
-  // elevation: 10 no Android cria um "contexto de empilhamento" que garante
-  // que o bloco azul fique visualmente na frente do ScrollView.
-  // zIndex sozinho NÃO funciona no Android sem elevation.
   blueBlock: {
-    backgroundColor: "#1B2B5E",
-    paddingTop: 16,
-    paddingBottom: 60,
+    width:"100%",
+    height:"25%",
+    backgroundColor: "#2C3F69",
+    paddingTop: 50,
+    paddingBottom:50, // ✅ era 90 — reduziu para valor normal
     alignItems: "center",
-    zIndex: 10,        // ← garante ordem no iOS
-    elevation: 10,     // ← obrigatório no Android para zIndex funcionar
+    borderBottomLeftRadius:20,
+    borderBottomRightRadius:20
+   
   },
 
   title: {
     color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "800",
+    fontSize: 30,
+    fontWeight: "900",
     letterSpacing: 0.5,
     marginBottom: 10,
   },
@@ -321,18 +422,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 12,
-    padding: 4,
+    padding: 6,
     position: "relative",
     height: 40,
-    width: "65%",
+    width: "70%",
   },
   tabIndicator: {
     position: "absolute",
-    width: "46%",
-    height: 32,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 9,
-    top: 4,
+    width: "50%",
+    height: 40,
+    backgroundColor: "#22c3a3c1",
+    borderRadius: 12,
+   
   },
   tabBtn: {
     flex: 1,
@@ -349,10 +450,8 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
-  // ScrollView com zIndex menor que o blueBlock
   scrollView: {
     flex: 1,
-    zIndex: 1,
   },
 
   rankItem: {

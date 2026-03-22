@@ -10,6 +10,7 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import { db } from "../../firebase/firebaseConfig"; // ajuste se necessário
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { router } from "expo-router";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -156,10 +157,20 @@ export default function Home() {
     setSaving(true);
 
     try {
+      const auth = getAuth();
+      const uid = auth.currentUser?.uid;
+
+      if (!uid) {
+        Alert.alert("Erro", "Usuário não autenticado.");
+        return;
+      }
+
       const pace = calcPace(distanceMeters, elapsedSeconds);
       await addDoc(collection(db, "corridas"), {
+        uid,                          // ← campo uid adicionado
         distancia_m: distanceMeters,
         distancia_km: parseFloat((distanceMeters / 1000).toFixed(3)),
+        duracao_min: Math.floor(elapsedSeconds / 60), // ← campo para o perfil
         tempo_s: elapsedSeconds,
         tempo_formatado: formatTime(elapsedSeconds),
         pace,

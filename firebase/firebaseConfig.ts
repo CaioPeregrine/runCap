@@ -3,6 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 
+
 // Copie esses dados do Firebase Console → Configurações do projeto → SDK Web
 const firebaseConfig = {
   apiKey: "AIzaSyAFlgFqpJJ8Gol8y5meMcy6kncwsJo3968",
