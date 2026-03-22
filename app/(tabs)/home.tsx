@@ -10,6 +10,7 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import { db } from "../../firebase/firebaseConfig"; // ajuste se necessário
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { router } from "expo-router";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type Coord = { latitude: number; longitude: number };
@@ -251,7 +252,16 @@ export default function Home() {
             >
               <Text style={styles.btnText}>▶  Iniciar Corrida</Text>
             </TouchableOpacity>
+
+           
           )}
+         <View style = {styles.cards}>
+          <TouchableOpacity style={styles.btncards} onPress={()=>router.push("/(drawer)/pontosTuristicos")}><Text>descobrir</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.btncards}><Text>metas</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.btncards}><Text>rotas</Text></TouchableOpacity>
+          </View>
+
+          <View style={styles.estatis}></View>
 
           {(status === "running" || status === "paused") && (
             <>
@@ -308,6 +318,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.5,
     shadowRadius: 10,
+    height:600
     
     
   },
@@ -332,6 +343,7 @@ const styles = StyleSheet.create({
   buttonsRow: {
     flexDirection: "row",
     gap: 10,
+    
   },
   btn: {
     flex: 1,
@@ -339,6 +351,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+    
   },
   btnStart: {
     backgroundColor: "#22C3A3",
@@ -352,7 +365,7 @@ const styles = StyleSheet.create({
   btnText: {
     color: "#FFFFFF",
     fontWeight: "700",
-    fontSize: 16,
+    fontSize: 16
   },
   statusText: {
     color: "#8E8E93",
@@ -360,4 +373,33 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 13,
   },
+  cards:{
+    width: '100%',
+    height: 120,
+    position: 'absolute',
+    top: 80,
+    alignItems: 'center',
+    flexDirection:"row",
+    justifyContent:"space-between"
+  },
+  btncards: {
+    backgroundColor:"#ffff",
+    height:"100%",
+    width:"32%",
+    borderRadius:10,
+    alignItems:"center",
+    justifyContent:"flex-end"
+  
+   
+  },
+  estatis:{
+    backgroundColor:"#22C3A3",
+    width:"100%",
+    height:220,
+    top:220,
+    position:"absolute",
+    borderRadius:10,
+    opacity:0.5,
+    
+  }
 });
