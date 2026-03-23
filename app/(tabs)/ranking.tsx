@@ -10,8 +10,7 @@ import {
   StatusBar,
   Image,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { db } from "@/firebase/firebaseConfig"
+import { db } from "@/firebase/firebaseConfig";
 import {
   collection,
   query,
@@ -21,159 +20,112 @@ import {
   where,
   doc,
   getDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { router } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
 type RankingUser = {
   id: string;
   nome: string;
   totalKm: number;
   nivel: number;
   status: "online" | "offline" | "correndo";
-  avatarUrl?: string;
+  avatarUrl: string | null;
 };
 
-// ─── Cores de status ──────────────────────────────────────────────────────────
 const STATUS_COLOR = {
   online: "#30D158",
   offline: "#8E8E93",
   correndo: "#FF9F0A",
 };
 
-// ─── Ícone de avatar padrão (iniciais) ───────────────────────────────────────
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({
   nome,
   size = 44,
-  avatarUrl,
   status,
+  avatarUrl,
 }: {
   nome: string;
   size?: number;
-  avatarUrl?: string;
   status?: "online" | "offline" | "correndo";
+  avatarUrl?: string | null;
 }) {
-  const initials = nome
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
+  const initials = nome.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
   const colors = ["#5E5CE6", "#30D158", "#FF9F0A", "#FF375F", "#64D2FF"];
-  const colorIndex =
-    nome.charCodeAt(0) % colors.length;
+  const colorIndex = nome.charCodeAt(0) % colors.length;
 
   return (
     <View style={{ position: "relative" }}>
-      <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: colors[colorIndex],
-          alignItems: "center",
-          justifyContent: "center",
-          borderWidth: 2,
-          borderColor: "#2C2C2E",
-        }}
-      >
-        <Text
-          style={{
-            color: "#FFF",
-            fontWeight: "700",
-            fontSize: size * 0.35,
-          }}
-        >
-          {initials}
-        </Text>
+      <View style={{
+        width: size, height: size, borderRadius: size / 2,
+        backgroundColor: colors[colorIndex],
+        alignItems: "center", justifyContent: "center",
+        borderWidth: 2, borderColor: "#fff",
+        overflow: "hidden",
+      }}>
+        {avatarUrl ? (
+          // Foto do Storage — atualiza automaticamente quando o usuário troca
+          <Image
+            source={{ uri: avatarUrl }}
+            style={{ width: size, height: size, borderRadius: size / 2 }}
+          />
+        ) : (
+          // Fallback: iniciais coloridas
+          <Text style={{ color: "#FFF", fontWeight: "700", fontSize: size * 0.35 }}>
+            {initials}
+          </Text>
+        )}
       </View>
       {status && (
-        <View
-          style={{
-            position: "absolute",
-            bottom: 1,
-            right: 1,
-            width: 10,
-            height: 10,
-            borderRadius: 5,
-            backgroundColor: STATUS_COLOR[status],
-            borderWidth: 2,
-            borderColor: "#1C1C1E",
-          }}
-        />
+        <View style={{
+          position: "absolute", bottom: 1, right: 1,
+          width: 10, height: 10, borderRadius: 5,
+          backgroundColor: STATUS_COLOR[status],
+          borderWidth: 2, borderColor: "#1C1C1E",
+        }} />
       )}
     </View>
   );
 }
 
-// ─── Pódio (top 3) ────────────────────────────────────────────────────────────
+// ─── Pódio ────────────────────────────────────────────────────────────────────
 function Podium({ users }: { users: RankingUser[] }) {
   const [first, second, third] = users;
 
   const PodiumItem = ({
-    user,
-    position,
-    height,
+    user, position, podiumHeight,
   }: {
-    user?: RankingUser;
-    position: number;
-    height: number;
+    user?: RankingUser; position: number; podiumHeight: number;
   }) => {
-    if (!user)
-      return <View style={{ flex: 1, alignItems: "center" }} />;
-
+    if (!user) return <View style={{ flex: 1 }} />;
     const medals = ["🥇", "🥈", "🥉"];
     const isFirst = position === 1;
 
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "flex-end",
-        }}
-      >
-        <Avatar nome={user.nome} size={isFirst ? 60 : 48} status={user.status} />
-        <Text
-          style={{
-            color: "#FFF",
-            fontWeight: "700",
-            fontSize: isFirst ? 14 : 12,
-            marginTop: 6,
-            textAlign: "center",
-          }}
-          numberOfLines={1}
-        >
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end" }}>
+        <Avatar nome={user.nome} size={isFirst ? 62 : 50} status={user.status} avatarUrl={user.avatarUrl} />
+        <Text style={{
+          color: "#1B2B5E", fontWeight: "700",
+          fontSize: isFirst ? 14 : 12, marginTop: 2, textAlign: "center",
+        }} numberOfLines={1}>
           {user.nome.split(" ")[0]}
         </Text>
         <Text style={{ fontSize: 10, color: "#8E8E93", marginBottom: 6 }}>
           {user.totalKm.toFixed(1)} km
         </Text>
-        <View
-          style={{
-            width: "80%",
-            height,
-            backgroundColor: isFirst ? "#5E5CE6" : "#3A3A3C",
-            borderTopLeftRadius: 8,
-            borderTopRightRadius: 8,
-            alignItems: "center",
-            justifyContent: "flex-start",
-            paddingTop: 8,
-          }}
-        >
+        <View style={{
+          width: "80%", height: podiumHeight,
+          backgroundColor: isFirst ? "#ffffff" : "#E0E0E0",
+          borderTopLeftRadius: 8, borderTopRightRadius: 8,
+          alignItems: "center", justifyContent: "flex-start", paddingTop: 2,
+          elevation: isFirst ? 4 : 2,
+        }}>
           <Text style={{ fontSize: isFirst ? 22 : 18 }}>{medals[position - 1]}</Text>
-          <Text
-            style={{
-              color: "#FFF",
-              fontWeight: "900",
-              fontSize: isFirst ? 18 : 14,
-              marginTop: 2,
-            }}
-          >
+          <Text style={{ color: "#1B2B5E", fontWeight: "900", fontSize: isFirst ? 18 : 14, marginTop: 2 }}>
             {position}°
           </Text>
         </View>
@@ -182,49 +134,30 @@ function Podium({ users }: { users: RankingUser[] }) {
   };
 
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "flex-end",
-        paddingHorizontal: 16,
-        height: 200,
-        marginBottom: 8,
-      }}
-    >
-      <PodiumItem user={second} position={2} height={90} />
-      <PodiumItem user={first} position={1} height={130} />
-      <PodiumItem user={third} position={3} height={70} />
+    <View style={{
+      flexDirection: "row", alignItems: "flex-end",
+      paddingHorizontal: 10,height: 210, marginBottom: 5,marginTop:28
+    }}>
+      <PodiumItem user={second} position={2} podiumHeight={90} />
+      <PodiumItem user={first}  position={1} podiumHeight={130} />
+      <PodiumItem user={third}  position={3} podiumHeight={70} />
     </View>
   );
 }
 
-// ─── Item da lista (posição 4+) ───────────────────────────────────────────────
-function RankItem({
-  user,
-  position,
-  isAmigos,
-}: {
-  user: RankingUser;
-  position: number;
-  isAmigos: boolean;
+// ─── RankItem ─────────────────────────────────────────────────────────────────
+function RankItem({ user, position, isAmigos }: {
+  user: RankingUser; position: number; isAmigos: boolean;
 }) {
   return (
     <View style={styles.rankItem}>
       <Text style={styles.rankPosition}>{position}°</Text>
-      <Avatar nome={user.nome} size={40} status={isAmigos ? user.status : undefined} />
+      <Avatar nome={user.nome} size={40} status={isAmigos ? user.status : undefined} avatarUrl={user.avatarUrl} />
       <View style={{ flex: 1, marginLeft: 12 }}>
-        <Text style={styles.rankName} numberOfLines={1}>
-          {user.nome}
-        </Text>
+        <Text style={styles.rankName} numberOfLines={1}>{user.nome}</Text>
         {isAmigos && (
-          <Text
-            style={[
-              styles.rankStatus,
-              { color: STATUS_COLOR[user.status] },
-            ]}
-          >
-            {user.status === "correndo" ? "🏃 correndo" : user.status}
-            {" · "}Nível {user.nivel}
+          <Text style={[styles.rankStatus, { color: STATUS_COLOR[user.status] }]}>
+            {user.status === "correndo" ? "🏃 correndo" : user.status}{" · "}Nível {user.nivel}
           </Text>
         )}
       </View>
@@ -233,176 +166,200 @@ function RankItem({
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+// ─── Tela principal ───────────────────────────────────────────────────────────
 export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => void }) {
-  const navigation = useNavigation<any>();
-  const [tab, setTab] = useState<"regional" | "amigos">("regional");
+  const [tab, setTab]                     = useState<"regional" | "amigos">("regional");
   const [regionalUsers, setRegionalUsers] = useState<RankingUser[]>([]);
-  const [amigosUsers, setAmigosUsers] = useState<RankingUser[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const [amigosUsers, setAmigosUsers]     = useState<RankingUser[]>([]);
+  const [loading, setLoading]             = useState(true);
   const tabAnim = useRef(new Animated.Value(0)).current;
+  const currentUser = getAuth().currentUser;
 
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
+  // ── Ranking Regional — tempo real ─────────────────────────────────────────
+  useEffect(() => {
+    // Escuta TODAS as corridas sem filtro de uid
+    // para poder agrupar por corredor e somar o total de km de cada um
+    const q = query(collection(db, "corridas"));
 
-  // ── Busca ranking regional ─────────────────────────────────────────────────
-  async function fetchRegional() {
-    try {
-      // Agrupa corridas por usuário e soma km
-      const corridasSnap = await getDocs(
-        query(collection(db, "corridas"), orderBy("distancia_km", "desc"), limit(50))
-      );
+    const unsub = onSnapshot(q, async (snap) => {
+      try {
+        // Agrupa corridas por uid somando km total de cada corredor
+        const map: Record<string, { totalKm: number; uid: string }> = {};
+        // Debug: mostra quantas corridas foram encontradas
+        console.log("Total de corridas encontradas:", snap.size);
 
-      const map: Record<string, { totalKm: number; uid: string }> = {};
-      corridasSnap.forEach((d) => {
-        const data = d.data();
-        const uid = data.uid || d.id;
-        if (!map[uid]) map[uid] = { totalKm: 0, uid };
-        map[uid].totalKm += data.distancia_km || 0;
-      });
+        snap.forEach((d) => {
+          const data = d.data();
+          const uid = data.uid;
 
-      // Busca nomes dos usuários
-      const users: RankingUser[] = await Promise.all(
-        Object.values(map)
+          if (!uid) {
+            console.warn("Corrida sem uid — id do doc:", d.id, "| campos:", Object.keys(data));
+            return;
+          }
+
+          if (!map[uid]) map[uid] = { totalKm: 0, uid };
+          map[uid].totalKm += data.distancia_km || 0;
+        });
+
+        console.log("Corredores únicos encontrados:", Object.keys(map).length);
+
+        // Ordena por totalKm e pega top 10
+        const sorted = Object.values(map)
           .sort((a, b) => b.totalKm - a.totalKm)
-          .slice(0, 10)
-          .map(async ({ uid, totalKm }) => {
-            const userDoc = await getDoc(doc(db, "usuarios", uid));
-            const userData = userDoc.data();
+          .slice(0, 10);
+
+        // Busca dados de cada corredor no Firestore
+        const users: RankingUser[] = await Promise.all(
+          sorted.map(async ({ uid, totalKm }) => {
+            try {
+              const d = await getDoc(doc(db, "usuarios", uid));
+              const u = d.data();
+              return {
+                id: uid,
+                nome: u?.nome || "Corredor",
+                totalKm,
+                nivel: u?.nivel || 1,
+                status: u?.status || "offline",
+                avatarUrl: u?.avatarUrl || null,
+              };
+            } catch {
+              // Se não encontrar o usuário, retorna placeholder
+              return {
+                id: uid,
+                nome: "Corredor",
+                totalKm,
+                nivel: 1,
+                status: "offline" as const,
+                avatarUrl: null,
+              };
+            }
+          })
+        );
+
+        setRegionalUsers(users);
+      } catch (e) { console.error("Erro regional:", e); }
+      finally { setLoading(false); }
+    });
+
+    return unsub;
+  }, []);
+
+  // ── Ranking Amigos — tempo real ────────────────────────────────────────────
+  // Escuta o documento do usuário para detectar mudanças na lista de amigos,
+  // e escuta a coleção "corridas" de cada amigo para atualizar km em tempo real.
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Primeiro escuta o documento do usuário para pegar a lista de amigos
+    const unsubUser = onSnapshot(doc(db, "usuarios", currentUser.uid), async (userSnap) => {
+      try {
+        const amigosIds: string[] = userSnap.data()?.amigos || [];
+        const ids = [currentUser.uid, ...amigosIds];
+
+        // Para cada id, busca dados do usuário + soma corridas
+        const users: RankingUser[] = await Promise.all(
+          ids.map(async (uid) => {
+            const uDoc = await getDoc(doc(db, "usuarios", uid));
+            const uData = uDoc.data();
+
+            const cSnap = await getDocs(
+              query(collection(db, "corridas"), where("uid", "==", uid))
+            );
+            let totalKm = 0;
+            cSnap.forEach((d) => { totalKm += d.data().distancia_km || 0; });
+
             return {
               id: uid,
-              nome: userData?.nome || "Corredor",
+              nome: uData?.nome || "Corredor",
               totalKm,
-              nivel: userData?.nivel || 1,
-              status: userData?.status || "offline",
+              nivel: uData?.nivel || 1,
+              status: uData?.status || "offline",
+              avatarUrl: uData?.avatarUrl || null,
             };
           })
-      );
+        );
 
-      setRegionalUsers(users);
-    } catch (e) {
-      console.error("Erro ranking regional:", e);
-    }
-  }
+        setAmigosUsers(users.sort((a, b) => b.totalKm - a.totalKm));
+      } catch (e) { console.error(e); }
+    });
 
-  // ── Busca ranking de amigos ────────────────────────────────────────────────
-  async function fetchAmigos() {
-    if (!currentUser) return;
-    try {
-      const userDoc = await getDoc(doc(db, "usuarios", currentUser.uid));
-      const amigosIds: string[] = userDoc.data()?.amigos || [];
+    return unsubUser;
+  }, [currentUser?.uid]);
 
-      if (amigosIds.length === 0) {
-        setAmigosUsers([]);
-        return;
-      }
+  // ── Escuta mudanças de avatar/status dos usuários em tempo real ────────────
+  // Sempre que um usuário atualiza o avatar ou status no Firestore,
+  // o ranking reflete a mudança sem precisar reabrir a tela.
+  useEffect(() => {
+    if (regionalUsers.length === 0) return;
 
-      // Inclui o próprio usuário
-      const ids = [currentUser.uid, ...amigosIds];
+    const unsubs = regionalUsers.map((u) =>
+      onSnapshot(doc(db, "usuarios", u.id), (snap) => {
+        const data = snap.data();
+        if (!data) return;
+        setRegionalUsers((prev) =>
+          prev.map((user) =>
+            user.id === u.id
+              ? { ...user, avatarUrl: data.avatarUrl || null, status: data.status || "offline", nome: data.nome || user.nome }
+              : user
+          )
+        );
+      })
+    );
 
-      const users: RankingUser[] = await Promise.all(
-        ids.map(async (uid) => {
-          const uDoc = await getDoc(doc(db, "usuarios", uid));
-          const uData = uDoc.data();
-
-          // Soma total de km das corridas
-          const corridasSnap = await getDocs(
-            query(collection(db, "corridas"), where("uid", "==", uid))
-          );
-          let totalKm = 0;
-          corridasSnap.forEach((d) => {
-            totalKm += d.data().distancia_km || 0;
-          });
-
-          return {
-            id: uid,
-            nome: uData?.nome || "Corredor",
-            totalKm,
-            nivel: uData?.nivel || 1,
-            status: uData?.status || "offline",
-          };
-        })
-      );
-
-      users.sort((a, b) => b.totalKm - a.totalKm);
-      setAmigosUsers(users);
-    } catch (e) {
-      console.error("Erro ranking amigos:", e);
-    }
-  }
+    return () => unsubs.forEach((u) => u());
+  }, [regionalUsers.length]);
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      await Promise.all([fetchRegional(), fetchAmigos()]);
-      setLoading(false);
-    }
-    load();
-  }, []);
+    if (amigosUsers.length === 0) return;
+
+    const unsubs = amigosUsers.map((u) =>
+      onSnapshot(doc(db, "usuarios", u.id), (snap) => {
+        const data = snap.data();
+        if (!data) return;
+        setAmigosUsers((prev) =>
+          prev.map((user) =>
+            user.id === u.id
+              ? { ...user, avatarUrl: data.avatarUrl || null, status: data.status || "offline", nome: data.nome || user.nome }
+              : user
+          )
+        );
+      })
+    );
+
+    return () => unsubs.forEach((u) => u());
+  }, [amigosUsers.length]);
 
   function switchTab(t: "regional" | "amigos") {
     setTab(t);
-    Animated.spring(tabAnim, {
-      toValue: t === "regional" ? 0 : 1,
-      useNativeDriver: false,
-    }).start();
+    Animated.spring(tabAnim, { toValue: t === "regional" ? 0 : 1, useNativeDriver: false }).start();
   }
 
   const users = tab === "regional" ? regionalUsers : amigosUsers;
-  const top3 = users.slice(0, 3);
-  const rest = users.slice(3);
+  const top3  = users.slice(0, 3);
+  const rest  = users.slice(3);
 
-  const tabIndicatorLeft = tabAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["2%", "52%"],
-  });
+  const tabLeft = tabAnim.interpolate({ inputRange: [0, 1], outputRange: ["2%", "52%"] });
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#2C3F69" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onOpenDrawer} style={styles.menuBtn}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
+      {/* BLOCO AZUL */}
+      <View style={styles.blueBlock}>
         <Text style={styles.title}>Ranking</Text>
-        <View style={{ width: 40 }} />
+
+        <View style={styles.tabContainer}>
+          <Animated.View style={[styles.tabIndicator, { left: tabLeft }]} />
+          <TouchableOpacity style={styles.tabBtn} onPress={() => switchTab("regional")}>
+            <Text style={[styles.tabText, tab === "regional" && styles.tabTextActive]}>regional</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabBtn} onPress={() => switchTab("amigos")}>
+            <Text style={[styles.tabText, tab === "amigos" && styles.tabTextActive]}>amigos</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <Animated.View style={[styles.tabIndicator, { left: tabIndicatorLeft }]} />
-        <TouchableOpacity
-          style={styles.tabBtn}
-          onPress={() => switchTab("regional")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              tab === "regional" && styles.tabTextActive,
-            ]}
-          >
-            regional
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tabBtn}
-          onPress={() => switchTab("amigos")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              tab === "amigos" && styles.tabTextActive,
-            ]}
-          >
-            amigos
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Lista */}
+      {/* CONTEÚDO */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Carregando...</Text>
@@ -410,84 +367,73 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
       ) : users.length === 0 ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>
-            {tab === "amigos"
-              ? "Adicione amigos para ver o ranking!"
-              : "Nenhum dado encontrado."}
+            {tab === "amigos" ? "Adicione amigos para ver o ranking!" : "Nenhum dado encontrado."}
           </Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           <Podium users={top3} />
+
           {rest.map((u, i) => (
-            <RankItem
-              key={u.id}
-              user={u}
-              position={i + 4}
-              isAmigos={tab === "amigos"}
-            />
+            <RankItem key={u.id} user={u} position={i + 4} isAmigos={tab === "amigos"} />
           ))}
-          <View style={{ height: 100 }} />
         </ScrollView>
       )}
 
-      {/* Botão flutuante — adicionar amigos */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push("/adicionarAmigos")}
-      >
+      {/* FAB */}
+      <TouchableOpacity style={styles.fab} onPress={() => router.push("/(drawer)/adicionarAmigos")}>
         <Text style={styles.fabIcon}>👥+</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-// ─── Estilos ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1C1C1E",
+    backgroundColor: "#F2F4F8",
   },
-  header: {
-    flexDirection: "row",
+
+  blueBlock: {
+    width:"100%",
+    height:"25%",
+    backgroundColor: "#2C3F69",
+    paddingTop: 50,
+    paddingBottom:50, // ✅ era 90 — reduziu para valor normal
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 56,
-    paddingBottom: 12,
-    paddingHorizontal: 20,
-    backgroundColor: "#2C2C2E",
+    borderBottomLeftRadius:20,
+    borderBottomRightRadius:20
+   
   },
-  menuBtn: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  menuIcon: {
-    color: "#FFF",
-    fontSize: 22,
-  },
+
   title: {
     color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "800",
+    fontSize: 30,
+    fontWeight: "900",
     letterSpacing: 0.5,
+    marginBottom: 10,
   },
+
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "#3A3A3C",
-    margin: 16,
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 12,
-    padding: 4,
+    padding: 6,
     position: "relative",
-    height: 44,
+    height: 40,
+    width: "70%",
   },
   tabIndicator: {
     position: "absolute",
-    width: "46%",
-    height: 36,
-    backgroundColor: "#5E5CE6",
-    borderRadius: 9,
-    top: 4,
+    width: "50%",
+    height: 40,
+    backgroundColor: "#22c3a3c1",
+    borderRadius: 12,
+   
   },
   tabBtn: {
     flex: 1,
@@ -496,29 +442,40 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   tabText: {
-    color: "#8E8E93",
+    color: "rgba(255,255,255,0.6)",
     fontWeight: "600",
-    fontSize: 14,
+    fontSize: 13,
   },
   tabTextActive: {
     color: "#FFFFFF",
   },
+
+  scrollView: {
+    flex: 1,
+  },
+
   rankItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2C2C2E",
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   rankPosition: {
-    color: "#8E8E93",
+    color: "#2C3F69",
     fontWeight: "700",
     fontSize: 14,
     width: 28,
   },
   rankName: {
-    color: "#FFFFFF",
+    color: "#2C3F69",
     fontWeight: "600",
     fontSize: 15,
   },
@@ -527,10 +484,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   rankKm: {
-    color: "#5E5CE6",
+    color: "#1B2B5E",
     fontWeight: "700",
     fontSize: 13,
   },
+
   loadingContainer: {
     flex: 1,
     alignItems: "center",
@@ -540,6 +498,7 @@ const styles = StyleSheet.create({
     color: "#8E8E93",
     fontSize: 15,
   },
+
   fab: {
     position: "absolute",
     bottom: 90,
@@ -547,11 +506,11 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: "#30D158",
+    backgroundColor: "#22C3A3",
     alignItems: "center",
     justifyContent: "center",
     elevation: 8,
-    shadowColor: "#30D158",
+    shadowColor: "#22C3A3",
     shadowOpacity: 0.5,
     shadowRadius: 10,
   },

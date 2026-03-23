@@ -17,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.runcap.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -34,6 +35,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "26a46c96-bc82-4286-b0af-55b1e4ed330c"
+      }
     }
   }
 }

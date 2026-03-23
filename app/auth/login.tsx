@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react'; // Importamos o useState
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-// Importamos a lógica do Firebase
+// Importamos a lógica do Firebase9
 import { auth } from '@/firebase/firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 

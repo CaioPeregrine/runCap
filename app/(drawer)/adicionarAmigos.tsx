@@ -96,7 +96,7 @@ export default function AdicionarAmigos() {
       async (snap) => {
         const data = snap.data();
         if (!data) return;
-        setMeuId(data.codigoId || currentUser.uid.slice(0, 8).toUpperCase());
+        setMeuId(data.codigoId || "");
 
         const amigosIds: string[] = data.amigos || [];
         const amigosData = await Promise.all(
@@ -240,14 +240,7 @@ export default function AdicionarAmigos() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>amigos</Text>
-      </View>
-
+    
       <FlatList
         data={amigos}
         keyExtractor={(item) => item.id}
@@ -372,15 +365,7 @@ export default function AdicionarAmigos() {
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#1C1C1E" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: 56,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    backgroundColor: "#2C2C2E",
-  },
+  container: { flex: 1, backgroundColor: "#ffffff" },
   backBtn: { marginRight: 12 },
   backIcon: { color: "#FFF", fontSize: 22, fontWeight: "300" },
   title: { color: "#FFF", fontSize: 22, fontWeight: "800" },
@@ -457,7 +442,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    backgroundColor: "#2C2C2E",
+    backgroundColor: "#6b6bff",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
