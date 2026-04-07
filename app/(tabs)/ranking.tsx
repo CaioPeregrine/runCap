@@ -1,5 +1,10 @@
 import { db } from "@/firebase/firebaseConfig";
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import Octicons from '@expo/vector-icons/Octicons';
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { getAuth } from "firebase/auth";
@@ -178,6 +183,29 @@ export default function RankingScreen() {
   const drawerAnim = useRef(new Animated.Value(-width * 0.8)).current;
   const currentUser = getAuth().currentUser;
 
+  const [userData, setUserData] = useState<{
+    nome: string;
+    nivel: number;
+    codigoId: string;
+    avatarUrl?: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      getDoc(doc(db, "usuarios", currentUser.uid)).then((snap) => {
+        const d = snap.data();
+        if (d) {
+          setUserData({
+            nome: d.nome || "Corredor",
+            nivel: d.nivel || 1,
+            codigoId: d.codigoId || currentUser.uid.slice(0, 8).toUpperCase(),
+            avatarUrl: d.avatarUrl || null,
+          });
+        }
+      });
+    }
+  }, [currentUser]);
+
   // ── Ranking Regional — tempo real ─────────────────────────────────────────
   useEffect(() => {
     // Escuta TODAS as corridas sem filtro de uid
@@ -337,7 +365,7 @@ export default function RankingScreen() {
     Animated.spring(tabAnim, { toValue: t === "regional" ? 0 : 1, useNativeDriver: false }).start();
   }
 
-  function openDrawerWithAnimation() {
+  function openDrawer() {
     setDrawerOpen(true);
     Animated.spring(drawerAnim, { toValue: 0, useNativeDriver: false }).start();
   }
@@ -361,7 +389,7 @@ export default function RankingScreen() {
       {/* BLOCO AZUL */}
       <View style={styles.blueBlock}>
         
-        <TouchableOpacity style={styles.drawer} onPress={openDrawerWithAnimation}>
+        <TouchableOpacity style={styles.drawer} onPress={openDrawer}>
           <Feather name="menu" size={30} color="white" />
         </TouchableOpacity>
         
@@ -406,26 +434,70 @@ export default function RankingScreen() {
       {drawerOpen && (
         <TouchableOpacity style={styles.drawerOverlay} activeOpacity={1} onPress={closeDrawer} />
       )}
-      <Animated.View style={[styles.drawerPanel, { transform: [{ translateX: drawerAnim }] }] }>
-        <Text style={styles.drawerTitle}>Menu</Text>
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/conquistas" as const); }}>
-          <Text style={styles.drawerItemText}>Conquistas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/pontosTuristicos" as const); }}>
-          <Text style={styles.drawerItemText}>Pontos Turísticos</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/historico" as const); }}>
-          <Text style={styles.drawerItemText}>Histórico</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/adicionarAmigos" as const); }}>
-          <Text style={styles.drawerItemText}>Adicionar Amigos</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/rotasSugeridas" as const); }}>
-          <Text style={styles.drawerItemText}>Rotas Sugeridas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(tabs)/ranking" as const); }}>
-          <Text style={styles.drawerItemText}>Ranking</Text>
-        </TouchableOpacity>
+      <Animated.View style={[styles.drawerPanel, { transform: [{ translateX: drawerAnim }] }]}>
+        {/* Cabeçalho do usuário */}
+        <View style={styles.userHeader}>
+          <View style={styles.avatar}>
+            {userData?.avatarUrl ? (
+              <Image source={{ uri: userData.avatarUrl }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>
+                {userData?.nome.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "??"}
+              </Text>
+            )}
+          </View>
+          <Text style={styles.userName}>{userData?.nome || "Carregando..."}</Text>
+          <Text style={styles.userId}>ID: {userData?.codigoId || "..."}</Text>
+          <View style={styles.nivelBadge}>
+            <Text style={styles.nivelText}>⭐ nível {userData?.nivel || 1}</Text>
+          </View>
+        </View>
+
+        {/* Itens do menu */}
+        <View style={styles.menuContainer}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/rotasSugeridas"); }}>
+            <View style={styles.menuIconWrapper}>
+              <FontAwesome6 name="route" size={24} color="#22C3A3" />
+            </View>
+            <Text style={styles.menuText}>Rotas Sugeridas</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/conquistas"); }}>
+            <View style={styles.menuIconWrapper}>
+              <Entypo name="medal" size={24} color="#22C3A3" />
+            </View>
+            <Text style={styles.menuText}>Conquistas</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/pontosTuristicos"); }}>
+            <View style={styles.menuIconWrapper}>
+              <Ionicons name="location-outline" size={24} color="#22C3A3" />
+            </View>
+            <Text style={styles.menuText}>Pontos Turísticos</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/historico"); }}>
+            <View style={styles.menuIconWrapper}>
+              <AntDesign name="field-time" size={24} color="#22C3A3" />
+            </View>
+            <Text style={styles.menuText}>Histórico de Corridas</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/adicionarAmigos"); }}>
+            <View style={styles.menuIconWrapper}>
+              <Feather name="user-plus" size={24} color="#22C3A3" />
+            </View>
+            <Text style={styles.menuText}>Adicionar Amigos</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(tabs)/ranking"); }}>
+            <View style={styles.menuIconWrapper}>
+              <Octicons name="trophy" size={24} color="#22C3A3" />
+            </View>
+            <Text style={styles.menuText}>Ranking</Text>
+          </TouchableOpacity>
+        </View>
+        <View>
+          <TouchableOpacity style={styles.back} onPress={() => { closeDrawer(); router.push("/auth/login"); }}>
+            <Text style={{fontWeight: "900",fontSize: 20,color: "white"}}>sair</Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
 
       {/* FAB */}
@@ -582,31 +654,82 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
-    width: 280,
+    width: width * 0.62,
     height: "100%",
-    backgroundColor: "#FFFFFF",
-    paddingTop: 80,
-    paddingHorizontal: 20,
+    backgroundColor: "#ffffff",
     zIndex: 11,
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 10,
   },
-  drawerTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 24,
-    color: "#1B2B5E",
+  userHeader: {
+    backgroundColor: "#2C3F69",
+    paddingTop: 64,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
   },
-  drawerItem: {
-    paddingVertical: 14,
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 15,
+    backgroundColor: "#07070e",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#ffffff",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 15,
+  },
+  avatarText: { color: "#FFF", fontSize: 24, fontWeight: "800" },
+  userName: { color: "#FFF", fontSize: 18, fontWeight: "700", marginBottom: 2 },
+  userId: { color: "#8E8E93", fontSize: 12, marginBottom: 10 },
+  nivelBadge: {
+    backgroundColor: "rgba(34, 195, 163, 0.17)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 25,
+    alignSelf: "flex-start",
+  },
+  nivelText: { color: "#22C3A3", fontSize: 13, fontWeight: "600" },
+  menuContainer: {
+    flex: 1,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: "#ffffff",
+    gap: 12,
   },
-  drawerItemText: {
+  menuIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(34, 195, 163, 0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuText: {
+    color: "#000000",
     fontSize: 16,
-    color: "#1B2B5E",
-    fontWeight: "600",
+    fontWeight: "500",
+  },
+  back: {
+    backgroundColor: "#ff0000",
+    padding: 5,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    margin: 20,
   }
+  
 });

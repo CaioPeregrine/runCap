@@ -25,6 +25,7 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import * as Clipboard from "expo-clipboard";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type Amigo = {
@@ -77,7 +78,7 @@ const STATUS_COLOR = {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function AdicionarAmigos() {
-  const navigation = useNavigation();
+  
   const auth = getAuth();
   const currentUser = auth.currentUser!;
 
@@ -246,8 +247,8 @@ export default function AdicionarAmigos() {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View>
-            {/* Subtítulo */}
-            <Text style={styles.subtitle}>Convide amigos para correr juntos</Text>
+            
+            <View style={styles.headerazul}></View>
 
             {/* Seu ID */}
             <View style={styles.idCard}>
@@ -256,7 +257,7 @@ export default function AdicionarAmigos() {
                 <Text style={styles.idValue}>ID:{meuId}</Text>
               </View>
               <TouchableOpacity style={styles.copyBtn} onPress={copiarId}>
-                <Text style={styles.copyBtnText}>📋 copiar</Text>
+                <Text style={styles.copyBtnText}><MaterialCommunityIcons name="content-copy" size={20} color="white" /> copiar</Text>
               </TouchableOpacity>
             </View>
 
@@ -369,30 +370,29 @@ const styles = StyleSheet.create({
   backBtn: { marginRight: 12 },
   backIcon: { color: "#FFF", fontSize: 22, fontWeight: "300" },
   title: { color: "#FFF", fontSize: 22, fontWeight: "800" },
-  subtitle: {
-    color: "#8E8E93",
-    fontSize: 13,
-    paddingHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 12,
+  headerazul: {
+    backgroundColor: "#2C3F69",
+    height: 280,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    marginBottom: 10,
   },
   idCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#2C2C2E",
     marginHorizontal: 16,
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
   },
-  idLabel: { color: "#8E8E93", fontSize: 12, marginBottom: 4 },
-  idValue: { color: "#FFF", fontSize: 20, fontWeight: "800", letterSpacing: 1 },
+  idLabel: { color: "#c1c1c1", fontSize: 12, marginBottom: 4, },
+  idValue: { color: "#000000", fontSize: 20, fontWeight: "800", letterSpacing: 1 },
   copyBtn: {
-    backgroundColor: "#30D158",
+    backgroundColor: "#22C3A3",
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 20,
   },
   copyBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
   section: { marginBottom: 16 },
