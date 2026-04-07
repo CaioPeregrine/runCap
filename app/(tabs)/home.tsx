@@ -12,6 +12,9 @@ import { db } from "../../firebase/firebaseConfig"; // ajuste se necessário
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { router } from "expo-router";
+import Octicons from '@expo/vector-icons/Octicons';
+import Feather from '@expo/vector-icons/Feather';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type Coord = { latitude: number; longitude: number };
@@ -267,9 +270,24 @@ export default function Home() {
            
           )}
          <View style = {styles.cards}>
-          <TouchableOpacity style={styles.btncards} onPress={()=>router.push("/(drawer)/pontosTuristicos")}><Text>descobrir</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.btncards}><Text>metas</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.btncards}><Text>rotas</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.btncards}>
+            <Octicons name="location" size={24} color="#22C3A3" />
+            <View>
+              <Text>Descobrir</Text>
+            </View>
+            </TouchableOpacity>
+
+          <TouchableOpacity style={styles.btncards}>
+            <Feather name="check-circle" size={24} color="#22C3A3" />
+            <View>
+              <Text>Metas</Text>
+            </View>
+            </TouchableOpacity>
+
+          <TouchableOpacity style={styles.btncards}>
+            <FontAwesome5 name="route" size={24} color="#22C3A3" /><View>
+              <Text>Rotas</Text></View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.estatis}></View>
@@ -317,19 +335,19 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
     width: "100%",
+    height: "100%",
+    borderRadius: 16,
+    
+    
+  
   },
   panel: {
     backgroundColor: "#F2F4F8",
     paddingTop: 16,
     paddingBottom: 28,
     paddingHorizontal: 20,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    elevation: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    height:600
+    height:500,
+
     
     
   },
@@ -399,7 +417,8 @@ const styles = StyleSheet.create({
     width:"32%",
     borderRadius:10,
     alignItems:"center",
-    justifyContent:"flex-end"
+    justifyContent:"center",
+    flexDirection:"column"
   
    
   },

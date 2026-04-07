@@ -140,8 +140,14 @@ export default function Login() {
 const styles = StyleSheet.create({
   // ... Seus estilos anteriores mantidos ...
   label: { fontSize: 22,fontWeight:"400" },
-  textInputInner: { fontSize: 18, color: "#000000", flex: 1 },
-  viewGoogleContainer: { alignItems: 'center', marginTop: 60 },
+  textInputInner: 
+  { fontSize: 18, color: "#000000", flex: 1 
+
+  },
+  viewGoogleContainer:
+   { alignItems: 'center', marginTop: 60 
+    
+   },
   headerContainer: {
     width: '100%',
     height: 200,
@@ -195,7 +201,11 @@ const styles = StyleSheet.create({
     marginTop: 25,
     alignItems: "center",
     height: 55,
-    justifyContent: 'center'
+    justifyContent: 'center',
+    elevation: 5  ,
+    shadowOpacity: 0.8,
+    shadowColor: "#000",
+ 
   },
   textoBotao: {
     fontWeight: "bold",

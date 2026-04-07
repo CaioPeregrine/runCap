@@ -1,29 +1,29 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Animated,
-  Dimensions,
-  StatusBar,
-  Image,
-} from "react-native";
 import { db } from "@/firebase/firebaseConfig";
+import Feather from '@expo/vector-icons/Feather';
+import { useNavigation } from "@react-navigation/native";
+import { router } from "expo-router";
+import { getAuth } from "firebase/auth";
 import {
   collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  where,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
+  query,
+  where,
 } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { router } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -110,17 +110,17 @@ function Podium({ users }: { users: RankingUser[] }) {
         <Avatar nome={user.nome} size={isFirst ? 62 : 50} status={user.status} avatarUrl={user.avatarUrl} />
         <Text style={{
           color: "#1B2B5E", fontWeight: "700",
-          fontSize: isFirst ? 14 : 12, marginTop: 2, textAlign: "center",
+          fontSize: isFirst ? 14 : 12, marginTop: 1, textAlign: "center",
         }} numberOfLines={1}>
           {user.nome.split(" ")[0]}
         </Text>
-        <Text style={{ fontSize: 10, color: "#8E8E93", marginBottom: 6 }}>
+        <Text style={{ fontSize: 15, color: "#000000", marginBottom: 6 }}>
           {user.totalKm.toFixed(1)} km
         </Text>
         <View style={{
           width: "80%", height: podiumHeight,
-          backgroundColor: isFirst ? "#ffffff" : "#E0E0E0",
-          borderTopLeftRadius: 8, borderTopRightRadius: 8,
+          backgroundColor: isFirst ? "#ffffff" : "#c1c1c1",
+          borderTopLeftRadius: 10, borderTopRightRadius: 8,
           alignItems: "center", justifyContent: "flex-start", paddingTop: 2,
           elevation: isFirst ? 4 : 2,
         }}>
@@ -136,10 +136,10 @@ function Podium({ users }: { users: RankingUser[] }) {
   return (
     <View style={{
       flexDirection: "row", alignItems: "flex-end",
-      paddingHorizontal: 10,height: 210, marginBottom: 5,marginTop:28
+      paddingHorizontal: 10,height: 210, marginBottom: 5,marginTop:45
     }}>
-      <PodiumItem user={second} position={2} podiumHeight={90} />
-      <PodiumItem user={first}  position={1} podiumHeight={130} />
+      <PodiumItem user={second} position={2} podiumHeight={100} />
+      <PodiumItem user={first}  position={1} podiumHeight={140} />
       <PodiumItem user={third}  position={3} podiumHeight={70} />
     </View>
   );
@@ -167,12 +167,15 @@ function RankItem({ user, position, isAmigos }: {
 }
 
 // ─── Tela principal ───────────────────────────────────────────────────────────
-export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => void }) {
+export default function RankingScreen() {
+  const navigation = useNavigation();
   const [tab, setTab]                     = useState<"regional" | "amigos">("regional");
   const [regionalUsers, setRegionalUsers] = useState<RankingUser[]>([]);
   const [amigosUsers, setAmigosUsers]     = useState<RankingUser[]>([]);
   const [loading, setLoading]             = useState(true);
   const tabAnim = useRef(new Animated.Value(0)).current;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerAnim = useRef(new Animated.Value(-width * 0.8)).current;
   const currentUser = getAuth().currentUser;
 
   // ── Ranking Regional — tempo real ─────────────────────────────────────────
@@ -244,7 +247,7 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
     return unsub;
   }, []);
 
-  // ── Ranking Amigos — tempo real ────────────────────────────────────────────
+  // ── Ranking Amigos — tempo real
   // Escuta o documento do usuário para detectar mudanças na lista de amigos,
   // e escuta a coleção "corridas" de cada amigo para atualizar km em tempo real.
   useEffect(() => {
@@ -334,6 +337,17 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
     Animated.spring(tabAnim, { toValue: t === "regional" ? 0 : 1, useNativeDriver: false }).start();
   }
 
+  function openDrawerWithAnimation() {
+    setDrawerOpen(true);
+    Animated.spring(drawerAnim, { toValue: 0, useNativeDriver: false }).start();
+  }
+
+  function closeDrawer() {
+    Animated.spring(drawerAnim, { toValue: -width * 0.8, useNativeDriver: false }).start(() => {
+      setDrawerOpen(false);
+    });
+  }
+
   const users = tab === "regional" ? regionalUsers : amigosUsers;
   const top3  = users.slice(0, 3);
   const rest  = users.slice(3);
@@ -346,6 +360,11 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
 
       {/* BLOCO AZUL */}
       <View style={styles.blueBlock}>
+        
+        <TouchableOpacity style={styles.drawer} onPress={openDrawerWithAnimation}>
+          <Feather name="menu" size={30} color="white" />
+        </TouchableOpacity>
+        
         <Text style={styles.title}>Ranking</Text>
 
         <View style={styles.tabContainer}>
@@ -384,9 +403,34 @@ export default function RankingScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
         </ScrollView>
       )}
 
+      {drawerOpen && (
+        <TouchableOpacity style={styles.drawerOverlay} activeOpacity={1} onPress={closeDrawer} />
+      )}
+      <Animated.View style={[styles.drawerPanel, { transform: [{ translateX: drawerAnim }] }] }>
+        <Text style={styles.drawerTitle}>Menu</Text>
+        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/conquistas" as const); }}>
+          <Text style={styles.drawerItemText}>Conquistas</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/pontosTuristicos" as const); }}>
+          <Text style={styles.drawerItemText}>Pontos Turísticos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/historico" as const); }}>
+          <Text style={styles.drawerItemText}>Histórico</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/adicionarAmigos" as const); }}>
+          <Text style={styles.drawerItemText}>Adicionar Amigos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(drawer)/rotasSugeridas" as const); }}>
+          <Text style={styles.drawerItemText}>Rotas Sugeridas</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.drawerItem} onPress={() => { closeDrawer(); router.push("/(tabs)/ranking" as const); }}>
+          <Text style={styles.drawerItemText}>Ranking</Text>
+        </TouchableOpacity>
+      </Animated.View>
+
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => router.push("/(drawer)/adicionarAmigos")}>
-        <Text style={styles.fabIcon}>👥+</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => router.push("/(drawer)/adicionarAmigos" as const)}>
+        <Feather name="user-plus" size={24} color="white" />
       </TouchableOpacity>
     </View>
   );
@@ -402,7 +446,7 @@ const styles = StyleSheet.create({
     width:"100%",
     height:"25%",
     backgroundColor: "#2C3F69",
-    paddingTop: 50,
+    paddingTop: 90,
     paddingBottom:50, // ✅ era 90 — reduziu para valor normal
     alignItems: "center",
     borderBottomLeftRadius:20,
@@ -459,7 +503,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFF9F2",
     marginHorizontal: 16,
     marginBottom: 8,
     borderRadius: 12,
@@ -503,9 +547,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 90,
     right: 20,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 50,
+    height: 50,
+    borderRadius: 10,
     backgroundColor: "#22C3A3",
     alignItems: "center",
     justifyContent: "center",
@@ -514,7 +558,55 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 10,
   },
-  fabIcon: {
-    fontSize: 20,
+  drawer: {
+    position: "absolute",
+    top: 50,
+    backgroundColor:"transparent",
+    height: 50,
+    width: 50,
+    left:5,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
   },
+  drawerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    zIndex: 10,
+  },
+  drawerPanel: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: 280,
+    height: "100%",
+    backgroundColor: "#FFFFFF",
+    paddingTop: 80,
+    paddingHorizontal: 20,
+    zIndex: 11,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  drawerTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    marginBottom: 24,
+    color: "#1B2B5E",
+  },
+  drawerItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  drawerItemText: {
+    fontSize: 16,
+    color: "#1B2B5E",
+    fontWeight: "600",
+  }
 });

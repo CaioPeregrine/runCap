@@ -8,20 +8,25 @@ export default function LayoutTabs() {
         <Tabs 
         screenOptions={{ 
             tabBarStyle: 
-            { backgroundColor: "#fcfafa", 
+            { backgroundColor: "#2C3F69",
+            width: "100%",     
             height: 70, 
-            paddingBottom: 5,
+            paddingBottom:5,
             paddingTop: 5,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+           
+            
              },
              
-            tabBarActiveTintColor: "#ef8605",
-            tabBarInactiveTintColor: "#000000" }}>
+            tabBarActiveTintColor: "#22C3A3",
+            tabBarInactiveTintColor: "#c1c1c1" }}>
 
-            <Tabs.Screen name="index" options={{ headerShown: false, tabBarLabel: "index", tabBarIcon: () => <Feather name="home" size={24} color="black" /> }} />
-            <Tabs.Screen name="home" options={{ headerShown: false, tabBarLabel: "home", tabBarIcon: () => <Feather name="home" size={24} color="black" /> }} />
+           
+            <Tabs.Screen name="home" options={{ headerShown: false, tabBarLabel: "home", tabBarIcon: () => <Feather name="home" size={24} /> }} />
             <Tabs.Screen name="relogio" options={{ headerShown: false, tabBarLabel: "relogio" }} />
-            <Tabs.Screen name="ranking" options={{ headerShown: false, tabBarLabel: "ranking",tabBarIcon:() => <Octicons name="trophy" size={24} color="black" /> }} />
-            <Tabs.Screen name="perfil" options={{ headerShown: false, tabBarLabel: "perfil", tabBarIcon: () => <FontAwesome5 name="user" size={24} color="black" /> }} />   
+            <Tabs.Screen name="ranking" options={{ headerShown: false, tabBarLabel: "ranking",tabBarIcon:() => <Octicons name="trophy" size={24}  /> }} />
+            <Tabs.Screen name="perfil" options={{ headerShown: false, tabBarLabel: "perfil", tabBarIcon: () => <FontAwesome5 name="user" size={24}  /> }} />   
         </Tabs>
     )
 }

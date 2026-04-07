@@ -43,18 +43,18 @@ const { width } = Dimensions.get("window");
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TODAS_CONQUISTAS = [
-  { id: "bom_inicio",   titulo: "Bom Início",     descricao: "Complete sua primeira corrida",    icone: "🏅" },
-  { id: "corrida_fogo", titulo: "Corrida Fogo",   descricao: "Corra 5 km em menos de 30 min",   icone: "🔥" },
-  { id: "estrela_mes",  titulo: "Estrela do Mês", descricao: "Corra todos os dias por 30 dias", icone: "⭐" },
-  { id: "lendario",     titulo: "Lendário",       descricao: "Alcance o nível 10",              icone: "👑" },
-  { id: "maratonista",  titulo: "Maratonista",    descricao: "Acumule 42 km no total",          icone: "🏃" },
-  { id: "sequencia_7",  titulo: "Sequência 7",    descricao: "7 dias consecutivos correndo",    icone: "📅" },
-  { id: "velocista",    titulo: "Velocista",      descricao: "Corra 1 km em menos de 5 min",   icone: "⚡" },
-  { id: "explorador",   titulo: "Explorador",     descricao: "Corra em 3 rotas diferentes",    icone: "🗺️" },
-  { id: "madrugueiro",  titulo: "Madrugador",     descricao: "Corrida antes das 6h",           icone: "🌅" },
-  { id: "centenario",   titulo: "Centenário",     descricao: "Complete 100 corridas",           icone: "💯" },
-  { id: "ultraman",     titulo: "Ultraman",       descricao: "Corra 100 km no total",           icone: "🦸" },
-  { id: "noturno",      titulo: "Noturno",        descricao: "Corrida após as 22h",            icone: "🌙" },
+  { id: "bom_inicio", titulo: "Bom Início", descricao: "Complete sua primeira corrida", icone: "🏅" },
+  { id: "corrida_fogo", titulo: "Corrida Fogo", descricao: "Corra 5 km em menos de 30 min", icone: "🔥" },
+  { id: "estrela_mes", titulo: "Estrela do Mês", descricao: "Corra todos os dias por 30 dias", icone: "⭐" },
+  { id: "lendario", titulo: "Lendário", descricao: "Alcance o nível 10", icone: "👑" },
+  { id: "maratonista", titulo: "Maratonista", descricao: "Acumule 42 km no total", icone: "🏃" },
+  { id: "sequencia_7", titulo: "Sequência 7", descricao: "7 dias consecutivos correndo", icone: "📅" },
+  { id: "velocista", titulo: "Velocista", descricao: "Corra 1 km em menos de 5 min", icone: "⚡" },
+  { id: "explorador", titulo: "Explorador", descricao: "Corra em 3 rotas diferentes", icone: "🗺️" },
+  { id: "madrugueiro", titulo: "Madrugador", descricao: "Corrida antes das 6h", icone: "🌅" },
+  { id: "centenario", titulo: "Centenário", descricao: "Complete 100 corridas", icone: "💯" },
+  { id: "ultraman", titulo: "Ultraman", descricao: "Corra 100 km no total", icone: "🦸" },
+  { id: "noturno", titulo: "Noturno", descricao: "Corrida após as 22h", icone: "🌙" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,8 +70,8 @@ const TODAS_CONQUISTAS = [
  */
 async function uploadImage(uri: string, path: string): Promise<string> {
   const response = await fetch(uri);
-  const blob     = await response.blob();
-  const fileRef  = ref(storage, path);
+  const blob = await response.blob();
+  const fileRef = ref(storage, path);
   await uploadBytes(fileRef, blob);
   return getDownloadURL(fileRef);
 }
@@ -96,7 +96,7 @@ function formatarTempo(min: number): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BarraXP({ xp, xpProximo, nivel }: { xp: number; xpProximo: number; nivel: number }) {
-  const pct       = Math.min((xp / xpProximo) * 100, 100);
+  const pct = Math.min((xp / xpProximo) * 100, 100);
   const animWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -183,7 +183,7 @@ function ModalConquistas({ visivel, onFechar, conquistas, destaque, onSelecionar
             >
               <Text style={[styles.cqIcone, !c.desbloqueada && { opacity: 0.2 }]}>{c.icone}</Text>
               <Text style={[styles.cqTitulo, !c.desbloqueada && styles.cqTextoOff]}>{c.titulo}</Text>
-              <Text style={[styles.cqDesc,   !c.desbloqueada && styles.cqTextoOff]} numberOfLines={2}>{c.descricao}</Text>
+              <Text style={[styles.cqDesc, !c.desbloqueada && styles.cqTextoOff]} numberOfLines={2}>{c.descricao}</Text>
               {!c.desbloqueada && <View style={styles.cqCadeado}><Ionicons name="lock-closed" size={12} color="#BBBBC8" /></View>}
               {c.id === destaque && <View style={styles.cqCheck}><Ionicons name="checkmark-circle" size={17} color="#22C3A3" /></View>}
             </TouchableOpacity>
@@ -200,25 +200,25 @@ function ModalConquistas({ visivel, onFechar, conquistas, destaque, onSelecionar
 
 export default function Perfil() {
   const auth = getAuth();
-  const uid  = auth.currentUser?.uid ?? "";
+  const uid = auth.currentUser?.uid ?? "";
 
-  const [nome,          setNome]          = useState("Corredor");
-  const [codigoId,      setCodigoId]      = useState("");
-  const [nivel,         setNivel]         = useState(1);
-  const [xp,            setXp]            = useState(0);
-  const [xpProximo,     setXpProximo]     = useState(2000);
-  const [totalKm,       setTotalKm]       = useState(0);
-  const [totalMin,      setTotalMin]      = useState(0);
-  const [sequencia,     setSequencia]     = useState(0);
+  const [nome, setNome] = useState("Corredor");
+  const [codigoId, setCodigoId] = useState("");
+  const [nivel, setNivel] = useState(1);
+  const [xp, setXp] = useState(0);
+  const [xpProximo, setXpProximo] = useState(2000);
+  const [totalKm, setTotalKm] = useState(0);
+  const [totalMin, setTotalMin] = useState(0);
+  const [sequencia, setSequencia] = useState(0);
   const [totalCorridas, setTotalCorridas] = useState(0);
-  const [avatarUrl,     setAvatarUrl]     = useState<string | null>(null);
-  const [bgUrl,         setBgUrl]         = useState<string | null>(null);
-  const [conquistas,    setConquistas]    = useState<(typeof TODAS_CONQUISTAS[0] & { desbloqueada: boolean })[]>([]);
-  const [destaque,      setDestaque]      = useState<string | null>(null);
-  const [modalAberto,   setModalAberto]   = useState(false);
-  const [loadAvatar,    setLoadAvatar]    = useState(false);
-  const [loadBg,        setLoadBg]        = useState(false);
-  const [carregando,    setCarregando]    = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [bgUrl, setBgUrl] = useState<string | null>(null);
+  const [conquistas, setConquistas] = useState<(typeof TODAS_CONQUISTAS[0] & { desbloqueada: boolean })[]>([]);
+  const [destaque, setDestaque] = useState<string | null>(null);
+  const [modalAberto, setModalAberto] = useState(false);
+  const [loadAvatar, setLoadAvatar] = useState(false);
+  const [loadBg, setLoadBg] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => { if (uid) { fetchDados(); fetchConquistas(); } }, [uid]);
 
@@ -231,7 +231,7 @@ export default function Perfil() {
   async function fetchDados() {
     try {
       const uDoc = await getDoc(doc(db, "usuarios", uid));
-      const u    = uDoc.data();
+      const u = uDoc.data();
       const snap = await getDocs(query(collection(db, "corridas"), where("uid", "==", uid)));
       let km = 0, min = 0, total = 0;
       snap.forEach((d) => { km += d.data().distancia_km || 0; min += d.data().duracao_min || 0; total++; });
@@ -332,7 +332,7 @@ export default function Perfil() {
   }
 
   const desbloqueadas = conquistas.filter((c) => c.desbloqueada);
-  const iniciais      = nome.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+  const iniciais = nome.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 
   if (carregando) {
     return (
@@ -408,9 +408,9 @@ export default function Perfil() {
         <View style={styles.secao}>
           <View style={styles.statsGrid}>
             <StatCard icone="🛣️" valor={`${totalKm.toFixed(1)} km`} rotulo="Distância total" />
-            <StatCard icone="⏱️" valor={formatarTempo(totalMin)}      rotulo="Tempo total"     />
-            <StatCard icone="🔥" valor={`${sequencia} dias`}          rotulo="Maior sequência" />
-            <StatCard icone="🏃" valor={`${totalCorridas}`}           rotulo="Corridas"        />
+            <StatCard icone="⏱️" valor={formatarTempo(totalMin)} rotulo="Tempo total" />
+            <StatCard icone="🔥" valor={`${sequencia} dias`} rotulo="Maior sequência" />
+            <StatCard icone="🏃" valor={`${totalCorridas}`} rotulo="Corridas" />
           </View>
         </View>
 
@@ -478,13 +478,13 @@ export default function Perfil() {
 const styles = StyleSheet.create({
 
   // Fundo geral — cor original #2C3F69 mantida
-  inicial: { flex: 1, backgroundColor: "#2C3F69" },
+inicial: { flex: 1, backgroundColor: "#F2F4F8" },
 
   // Bloco bege superior — cor original #EDE8DF mantida
-  perfil: { backgroundColor: "#EDE8DF", paddingBottom: 20 },
+  perfil: { backgroundColor: "#2C3F69", paddingBottom: 20 },
 
   bannerArea: { width: "100%", height: 130, overflow: "hidden" },
-  bannerImg:  { width: "100%", height: "100%", resizeMode: "cover" },
+  bannerImg: { width: "100%", height: "100%", resizeMode: "cover" },
   bannerCamera: {
     position: "absolute", bottom: 8, right: 12,
     backgroundColor: "rgba(255,255,255,0.75)", borderRadius: 16, padding: 6,
@@ -504,18 +504,18 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     overflow: "hidden", elevation: 4,
   },
-  circleImg:     { width: "100%", height: "100%", resizeMode: "cover" },
-  circleIniciais:{ color: "#fff", fontSize: 26, fontWeight: "800" },
+  circleImg: { width: "100%", height: "100%", resizeMode: "cover" },
+  circleIniciais: { color: "#fff", fontSize: 26, fontWeight: "800" },
   circleLapis: {
     position: "absolute", bottom: 3, right: 3,
     width: 20, height: 20, borderRadius: 10,
     backgroundColor: "#22C3A3", alignItems: "center", justifyContent: "center",
   },
 
-  nomeBox:   { flex: 1, paddingBottom: 4 },
+  nomeBox: { flex: 1, paddingBottom: 4 },
   nomeTexto: { color: "#2C3F69", fontSize: 17, fontWeight: "800" },
-  idTexto:   { color: "#888", fontSize: 11, marginTop: 2 },
-  nivelBadge:{
+  idTexto: { color: "#888", fontSize: 11, marginTop: 2 },
+  nivelBadge: {
     flexDirection: "row", alignItems: "center", gap: 4,
     backgroundColor: "#2C3F69", borderRadius: 20,
     paddingHorizontal: 8, paddingVertical: 3,
@@ -524,47 +524,47 @@ const styles = StyleSheet.create({
   nivelTexto: { color: "#FFD700", fontSize: 12, fontWeight: "700" },
 
   secao: {
-    backgroundColor: "#ffffff", marginHorizontal: 16, marginTop: 12,
+    backgroundColor: "#FFF9F2", marginHorizontal: 16, marginTop: 12,
     borderRadius: 16, paddingVertical: 16,
-    elevation: 3, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 6,
+    
   },
   secaoHeader: {
     flexDirection: "row", justifyContent: "space-between",
     alignItems: "center", paddingHorizontal: 16, marginBottom: 12,
   },
   secaoTitulo: { color: "#2C3F69", fontSize: 16, fontWeight: "800" },
-  verTodas:    { color: "#22C3A3", fontSize: 13, fontWeight: "600" },
+  verTodas: { color: "#22C3A3", fontSize: 13, fontWeight: "600" },
 
   // Barra XP — Brxp (trilha branca) + Cirxp (barra verde #1ffc48 original)
-  xpBox:     { paddingHorizontal: 16 },
-  xpTopo:    { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  xpLabel:   { color: "#2C3F69", fontWeight: "700", fontSize: 14 },
-  xpValor:   { color: "#888", fontSize: 13 },
-  xpTrilha:  { height: 20, backgroundColor: "#EBEBF0", borderRadius: 20, overflow: "hidden" },
-  xpBarra:   { height: "100%", backgroundColor: "#1ffc48", borderRadius: 20 },
-  xpRodape:  { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  xpFaltando:{ color: "#888", fontSize: 11 },
-  xpNivel:   { color: "#888", fontSize: 11 },
+  xpBox: { paddingHorizontal: 16 },
+  xpTopo: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
+  xpLabel: { color: "#2C3F69", fontWeight: "700", fontSize: 14 },
+  xpValor: { color: "#888", fontSize: 13 },
+  xpTrilha: { height: 20, backgroundColor: "#EBEBF0", borderRadius: 20, overflow: "hidden" },
+  xpBarra: { height: "100%", backgroundColor: "#1ffc48", borderRadius: 20 },
+  xpRodape: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
+  xpFaltando: { color: "#888", fontSize: 11 },
+  xpNivel: { color: "#888", fontSize: 11 },
 
   statsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, gap: 10 },
-  statCard:  { width: (width - 32 - 10 - 24) / 2, backgroundColor: "#F7F8FC", borderRadius: 12, padding: 14 },
+  statCard: { width: (width - 32 - 10 - 24) / 2, backgroundColor: "#FFF9F2", borderRadius: 12, padding: 14 },
   statIcone: { fontSize: 22, marginBottom: 6 },
   statValor: { color: "#2C3F69", fontSize: 20, fontWeight: "800" },
-  statRotulo:{ color: "#888", fontSize: 12, marginTop: 3 },
+  statRotulo: { color: "#888", fontSize: 12, marginTop: 3 },
 
-  semCq:    { color: "#888", fontSize: 13, paddingHorizontal: 16, paddingBottom: 4 },
+  semCq: { color: "#888", fontSize: 13, paddingHorizontal: 16, paddingBottom: 4 },
   cqPerfil: {
     flexDirection: "row", alignItems: "center", gap: 12,
     backgroundColor: "#F7F8FC", borderRadius: 12, padding: 12,
   },
   cqPerfilDestaque: { borderWidth: 1.5, borderColor: "#22C3A3", backgroundColor: "#F0FBF8" },
-  cqPerfilIcone:    { fontSize: 26 },
-  cqPerfilTitulo:   { color: "#2C3F69", fontSize: 13, fontWeight: "700" },
-  cqPerfilDesc:     { color: "#888", fontSize: 11, marginTop: 2 },
+  cqPerfilIcone: { fontSize: 26 },
+  cqPerfilTitulo: { color: "#2C3F69", fontSize: 13, fontWeight: "700" },
+  cqPerfilDesc: { color: "#888", fontSize: 11, marginTop: 2 },
 
-  menuItem:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
-  menuDivisor:{ height: 1, backgroundColor: "#F0F0F5", marginHorizontal: 16 },
-  menuTexto:  { color: "#2C3F69", fontSize: 15, fontWeight: "500" },
+  menuItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
+  menuDivisor: { height: 1, backgroundColor: "#F0F0F5", marginHorizontal: 16 },
+  menuTexto: { color: "#2C3F69", fontSize: 15, fontWeight: "500" },
 
   modalWrap: { flex: 1, backgroundColor: "#F2F4F8" },
   modalHeader: {
@@ -573,19 +573,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#F0F0F5",
   },
   modalTitulo: { color: "#2C3F69", fontSize: 20, fontWeight: "800" },
-  modalDica:   { color: "#888", fontSize: 13, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#fff" },
+  modalDica: { color: "#888", fontSize: 13, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#fff" },
 
   cqItem: {
     flex: 1, margin: 5, backgroundColor: "#fff", borderRadius: 14, padding: 12,
     alignItems: "center", elevation: 2, shadowColor: "#000", shadowOpacity: 0.06,
     shadowRadius: 4, position: "relative", minHeight: 115,
   },
-  cqBloqueada:  { backgroundColor: "#F0F0F5", elevation: 0 },
-  cqDestaque:   { borderWidth: 2, borderColor: "#22C3A3" },
-  cqIcone:  { fontSize: 28, marginBottom: 6 },
+  cqBloqueada: { backgroundColor: "#F0F0F5", elevation: 0 },
+  cqDestaque: { borderWidth: 2, borderColor: "#22C3A3" },
+  cqIcone: { fontSize: 28, marginBottom: 6 },
   cqTitulo: { color: "#2C3F69", fontSize: 11, fontWeight: "700", textAlign: "center" },
-  cqDesc:   { color: "#888", fontSize: 9, textAlign: "center", marginTop: 3 },
+  cqDesc: { color: "#888", fontSize: 9, textAlign: "center", marginTop: 3 },
   cqTextoOff: { color: "#BBBBC8" },
-  cqCadeado:  { position: "absolute", top: 8, right: 8 },
-  cqCheck:    { position: "absolute", top: 6, left: 6 },
+  cqCadeado: { position: "absolute", top: 8, right: 8 },
+  cqCheck: { position: "absolute", top: 6, left: 6 },
 });
