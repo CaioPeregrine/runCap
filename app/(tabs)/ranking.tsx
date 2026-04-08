@@ -700,8 +700,8 @@ const styles = StyleSheet.create({
   nivelText: { color: "#22C3A3", fontSize: 13, fontWeight: "600" },
   menuContainer: {
     flex: 1,
-    paddingTop: 20,
-    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingHorizontal: 10,
   },
   menuItem: {
     flexDirection: "row",

@@ -290,7 +290,7 @@ export default function Perfil() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
-    
+
         <View>
 
           {/* Banner — toca para trocar o fundo */}
@@ -343,7 +343,10 @@ export default function Perfil() {
         {/* ══════════════════════════════════════════════════════════════
             ESTATÍSTICAS — substituiu o scrollview de texto aleatório
         ══════════════════════════════════════════════════════════════ */}
-        <View style={styles.secao}>
+        <View style={{
+          marginHorizontal: 16, marginTop: 12,
+          borderRadius: 16, paddingVertical: 16,
+        }}>
           <View style={styles.statsGrid}>
             <StatCard icone="" valor={`${totalKm.toFixed(1)} km`} rotulo="Distância total" />
             <StatCard icone="" valor={formatarTempo(totalMin)} rotulo="Tempo total" />
@@ -415,7 +418,7 @@ export default function Perfil() {
 
 const styles = StyleSheet.create({
 
-  
+
   inicial: { flex: 1, backgroundColor: "#F2F4F8" },
 
   // Bloco bege superior — cor original #EDE8DF mantida
@@ -427,17 +430,16 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.75)", borderRadius: 16, padding: 6,
   },
 
-  // marginTop: -40 → avatar sobe sobre o banner (overlap)
+
   perfilInfo: {
     flexDirection: "row", alignItems: "flex-end",
-    paddingHorizontal: 20, marginTop: -85, gap: 14,
+    paddingHorizontal: 20, marginTop: -75, gap: 14,
   },
 
   // Círculo — cor original #b1832d mantida
   circle: {
     width: 70, height: 70, borderRadius: 15,
-    borderWidth: 3, borderColor: "transparent",
-    backgroundColor: "#b1832d",
+    borderWidth: 3, borderColor: "transparent", 
     alignItems: "center", justifyContent: "center",
     overflow: "hidden", elevation: 4,
   },
@@ -469,8 +471,10 @@ const styles = StyleSheet.create({
     flexDirection: "row", justifyContent: "space-between",
     alignItems: "center", paddingHorizontal: 16, marginBottom: 12,
   },
-  secaoTitulo: { color: "#2C3F69", fontSize: 16, fontWeight: "800" },
-  verTodas: { color: "#22C3A3", fontSize: 13, fontWeight: "600" },
+  secaoTitulo: 
+  { color: "#2C3F69", fontSize: 16, fontWeight: "800" },
+  verTodas: 
+  { color: "#22C3A3", fontSize: 13, fontWeight: "600" },
 
   // Barra XP — Brxp (trilha branca) + Cirxp (barra verde #1ffc48 original)
   xpBox:
