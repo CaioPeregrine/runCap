@@ -23,10 +23,10 @@ export default function LayoutTabs() {
             tabBarInactiveTintColor: "#c1c1c1" }}>
 
            
-            <Tabs.Screen name="home" options={{ headerShown: false, tabBarLabel: "home", tabBarIcon: () => <Feather name="home" size={24} /> }} />
+            <Tabs.Screen name="home" options={{ headerShown: false, tabBarLabel: "home", tabBarIcon: ({color}) => <Feather name="home" size={24} color={color} /> }} />
             <Tabs.Screen name="relogio" options={{ headerShown: false, tabBarLabel: "relogio" }} />
-            <Tabs.Screen name="ranking" options={{ headerShown: false, tabBarLabel: "ranking",tabBarIcon:() => <Octicons name="trophy" size={24}  /> }} />
-            <Tabs.Screen name="perfil" options={{ headerShown: false, tabBarLabel: "perfil", tabBarIcon: () => <FontAwesome5 name="user" size={24}  /> }} />   
+            <Tabs.Screen name="ranking" options={{ headerShown: false, tabBarLabel: "ranking",tabBarIcon:({color}) => <Octicons name="trophy" size={24} color={color}  /> }} />
+            <Tabs.Screen name="perfil" options={{ headerShown: false, tabBarLabel: "perfil", tabBarIcon: ({color}) => <FontAwesome5 name="user" size={24} color={color}  /> }} />   
         </Tabs>
     )
 }

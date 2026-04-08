@@ -1,16 +1,22 @@
 import Fontisto from '@expo/vector-icons/Fontisto';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import React, { useState } from 'react'; // Importamos o useState
+import React, { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-// Importamos a lógica do Firebase9
 import { auth } from '@/firebase/firebaseConfig';
+import { db } from '@/firebase/firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 
 interface DadosLogin {
   email: string;
   senha: string;
+}
+
+// ─── Gera um ID único no formato ID + 6 caracteres ────────────────────────────
+function gerarCodigoId(): string {
+  return "ID" + Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
 const realizarLogin = async ({ email, senha }: DadosLogin) => {
@@ -20,17 +26,15 @@ const realizarLogin = async ({ email, senha }: DadosLogin) => {
     return userCredential;
   } catch (error: any) {
     console.error("Erro ao entrar:", error.message);
-    throw error; // Re-throw para que o chamador trate
+    throw error;
   }
 };
 
 export default function Login() {
-  // Estados para armazenar os dados e controle de carregamento
   const [email, setEmail] = useState<string>('');
   const [senha, setSenha] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Função principal de Login
   const handleLogin = async () => {
     if (email === '' || senha === '') {
       Alert.alert("Erro", "Por favor, preencha todos os campos.");
@@ -40,8 +44,28 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await realizarLogin({ email, senha });
-      // Se der certo, navega para a Home
+      const userCredential = await realizarLogin({ email, senha });
+      const user = userCredential.user;
+
+      // ✅ Verifica e corrige documento incompleto no Firestore
+      const userRef = doc(db, "usuarios", user.uid);
+      const userSnap = await getDoc(userRef);
+      const data = userSnap.data();
+
+      const updates: Record<string, any> = { status: "online" };
+
+      if (!data?.codigoId) {
+        updates.codigoId = gerarCodigoId();
+      }
+      if (!data?.nome) {
+        updates.nome = user.displayName || "Corredor";
+      }
+      if (!data?.email) {
+        updates.email = user.email?.toLowerCase() || "";
+      }
+
+      await updateDoc(userRef, updates);
+
       router.replace("/home");
     } catch (error: any) {
       console.log(error.code);
@@ -79,7 +103,7 @@ export default function Login() {
             autoCapitalize='none'
             keyboardType='email-address'
             value={email}
-            onChangeText={setEmail} // Atualiza o estado
+            onChangeText={setEmail}
           />
         </View>
 
@@ -94,7 +118,7 @@ export default function Login() {
             autoCapitalize='none'
             secureTextEntry
             value={senha}
-            onChangeText={setSenha} // Atualiza o estado
+            onChangeText={setSenha}
           />
         </View>
 
@@ -108,7 +132,7 @@ export default function Login() {
           <TouchableOpacity
             style={styles.botao}
             onPress={handleLogin}
-            disabled={loading} // Desativa o botão enquanto carrega
+            disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#2C3F69" />
@@ -121,7 +145,6 @@ export default function Login() {
 
       <View style={styles.viewGoogleContainer}>
         <Text style={styles.estiloGoogle}>ou entre com </Text>
-        {/* Aqui você pode adicionar o componente de Login Social depois */}
         <TouchableOpacity style={{ marginTop: 10 }}>
           <Ionicons name="logo-google" size={30} color="black" />
         </TouchableOpacity>
@@ -138,16 +161,9 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  // ... Seus estilos anteriores mantidos ...
-  label: { fontSize: 22,fontWeight:"400" },
-  textInputInner: 
-  { fontSize: 18, color: "#000000", flex: 1 
-
-  },
-  viewGoogleContainer:
-   { alignItems: 'center', marginTop: 60 
-    
-   },
+  label: { fontSize: 22, fontWeight: "400" },
+  textInputInner: { fontSize: 18, color: "#000000", flex: 1 },
+  viewGoogleContainer: { alignItems: 'center', marginTop: 60 },
   headerContainer: {
     width: '100%',
     height: 200,
@@ -177,7 +193,7 @@ const styles = StyleSheet.create({
   },
   BK2: {
     width: "80%",
-    marginTop: 100, // Ajuste para não ficar sob o círculo
+    marginTop: 100,
   },
   input: {
     alignItems: "center",
@@ -187,8 +203,6 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     marginBottom: 10,
     flexDirection: 'row',
-    
-     // Altura fixa para o input
   },
   TextEsqueci: {
     fontSize: 13,
@@ -202,10 +216,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     height: 55,
     justifyContent: 'center',
-    elevation: 5  ,
+    elevation: 5,
     shadowOpacity: 0.8,
     shadowColor: "#000",
- 
   },
   textoBotao: {
     fontWeight: "bold",
@@ -216,23 +229,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 15,
     color: "#000000",
-   
   },
   cadastre: {
     fontSize: 20,
     color: "#22C3A3",
-    fontWeight:"bold",
+    fontWeight: "bold",
     marginLeft: 5,
-    
-    
-  
-    
-   
   },
   viewCadastre: {
     position: 'absolute',
     bottom: 90,
-    flexDirection:"column",
+    flexDirection: "column",
     alignItems: 'center',
   }
 });

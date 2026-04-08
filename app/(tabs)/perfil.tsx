@@ -1,22 +1,4 @@
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * Perfil.tsx
- * ═══════════════════════════════════════════════════════════════════════════
- *
- * BASEADO NO SEU CÓDIGO ORIGINAL — o que foi mantido:
- *   • backgroundColor "#2C3F69" no fundo geral (inicial)
- *   • backgroundColor "#EDE8DF" no bloco superior (perfil)
- *   • backgroundColor "#b1832d" no círculo do avatar (circle)
- *   • backgroundColor "#1ffc48" na barra de XP (Cirxp)
- *   • Ideia do ScrollView de conquistas
- *
- * O QUE FOI EXPANDIDO:
- *   • Banner clicável para trocar imagem de fundo (Storage)
- *   • Avatar clicável com foto real do Storage
- *   • Barra XP animada com dados reais do Firestore
- *   • Grid 2×2 de estatísticas (km, tempo, sequência, corridas)
- *   • Conquistas: ScrollView vertical no perfil + Modal completo
- */
+
 
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -36,12 +18,6 @@ import { getAuth } from "firebase/auth";
 
 const { width } = Dimensions.get("window");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LISTA FIXA DE CONQUISTAS
-// Fica no código. O Firestore guarda só os ids já desbloqueados.
-// fetchConquistas() cruza as duas listas para marcar desbloqueada: true/false.
-// ─────────────────────────────────────────────────────────────────────────────
-
 const TODAS_CONQUISTAS = [
   { id: "bom_inicio", titulo: "Bom Início", descricao: "Complete sua primeira corrida", icone: "🏅" },
   { id: "corrida_fogo", titulo: "Corrida Fogo", descricao: "Corra 5 km em menos de 30 min", icone: "🔥" },
@@ -57,17 +33,6 @@ const TODAS_CONQUISTAS = [
   { id: "noturno", titulo: "Noturno", descricao: "Corrida após as 22h", icone: "🌙" },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * uploadImage
- * 1. fetch(uri) — lê o arquivo local (file://...)
- * 2. .blob()   — converte para formato aceito pelo Storage
- * 3. uploadBytes — envia para o Firebase Storage
- * 4. getDownloadURL — retorna URL pública para salvar no Firestore
- */
 async function uploadImage(uri: string, path: string): Promise<string> {
   const response = await fetch(uri);
   const blob = await response.blob();
@@ -84,16 +49,6 @@ function formatarTempo(min: number): string {
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUB-COMPONENTE: BarraXP
-// Antigo "Brxp" (container branco) + "Cirxp" (barra verde interna).
-// Manteve as cores originais. Adicionou animação e valores reais.
-//
-// useRef → guarda Animated.Value sem causar re-render
-// useEffect → dispara Animated.timing ao montar (0 → pct% em 900ms)
-// interpolate → converte número em string de porcentagem para o style width
-// useNativeDriver:false → obrigatório para animar "width" (não suportado no nativo)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function BarraXP({ xp, xpProximo, nivel }: { xp: number; xpProximo: number; nivel: number }) {
   const pct = Math.min((xp / xpProximo) * 100, 100);
@@ -124,11 +79,6 @@ function BarraXP({ xp, xpProximo, nivel }: { xp: number; xpProximo: number; nive
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUB-COMPONENTE: StatCard
-// Card reutilizável para uma estatística. Usado 4× no grid 2×2.
-// ─────────────────────────────────────────────────────────────────────────────
-
 function StatCard({ icone, valor, rotulo }: { icone: string; valor: string; rotulo: string }) {
   return (
     <View style={styles.statCard}>
@@ -138,14 +88,6 @@ function StatCard({ icone, valor, rotulo }: { icone: string; valor: string; rotu
     </View>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SUB-COMPONENTE: ModalConquistas
-// Grade 3 colunas com todas as conquistas.
-// Desbloqueada → colorida + clicável
-// Bloqueada    → cinza + cadeado + disabled (toque desativado)
-// Destaque     → borda verde + check (a pinada no perfil)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function ModalConquistas({ visivel, onFechar, conquistas, destaque, onSelecionar }: {
   visivel: boolean;
@@ -348,12 +290,8 @@ export default function Perfil() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
-        {/* ══════════════════════════════════════════════════════════════
-            BLOCO SUPERIOR
-            Antigo: "perfil" (fundo bege) + "circle" (avatar marrom) + "nome"
-            Novo: banner clicável + avatar com foto real + info ao lado
-        ══════════════════════════════════════════════════════════════ */}
-        <View style={styles.perfil}>
+    
+        <View>
 
           {/* Banner — toca para trocar o fundo */}
           <TouchableOpacity style={styles.bannerArea} onPress={escolherBackground} activeOpacity={0.85}>
@@ -407,10 +345,10 @@ export default function Perfil() {
         ══════════════════════════════════════════════════════════════ */}
         <View style={styles.secao}>
           <View style={styles.statsGrid}>
-            <StatCard icone="🛣️" valor={`${totalKm.toFixed(1)} km`} rotulo="Distância total" />
-            <StatCard icone="⏱️" valor={formatarTempo(totalMin)} rotulo="Tempo total" />
-            <StatCard icone="🔥" valor={`${sequencia} dias`} rotulo="Maior sequência" />
-            <StatCard icone="🏃" valor={`${totalCorridas}`} rotulo="Corridas" />
+            <StatCard icone="" valor={`${totalKm.toFixed(1)} km`} rotulo="Distância total" />
+            <StatCard icone="" valor={formatarTempo(totalMin)} rotulo="Tempo total" />
+            <StatCard icone="" valor={`${sequencia} dias`} rotulo="Maior sequência" />
+            <StatCard icone="" valor={`${totalCorridas}`} rotulo="Corridas" />
           </View>
         </View>
 
@@ -477,13 +415,12 @@ export default function Perfil() {
 
 const styles = StyleSheet.create({
 
-  // Fundo geral — cor original #2C3F69 mantida
-inicial: { flex: 1, backgroundColor: "#F2F4F8" },
+  
+  inicial: { flex: 1, backgroundColor: "#F2F4F8" },
 
   // Bloco bege superior — cor original #EDE8DF mantida
-  perfil: { backgroundColor: "#2C3F69", paddingBottom: 20 },
 
-  bannerArea: { width: "100%", height: 130, overflow: "hidden" },
+  bannerArea: { width: "100%", height: 240, overflow: "hidden" },
   bannerImg: { width: "100%", height: "100%", resizeMode: "cover" },
   bannerCamera: {
     position: "absolute", bottom: 8, right: 12,
@@ -493,13 +430,13 @@ inicial: { flex: 1, backgroundColor: "#F2F4F8" },
   // marginTop: -40 → avatar sobe sobre o banner (overlap)
   perfilInfo: {
     flexDirection: "row", alignItems: "flex-end",
-    paddingHorizontal: 20, marginTop: -40, gap: 14,
+    paddingHorizontal: 20, marginTop: -85, gap: 14,
   },
 
   // Círculo — cor original #b1832d mantida
   circle: {
-    width: 80, height: 80, borderRadius: 40,
-    borderWidth: 3, borderColor: "#EDE8DF",
+    width: 70, height: 70, borderRadius: 15,
+    borderWidth: 3, borderColor: "transparent",
     backgroundColor: "#b1832d",
     alignItems: "center", justifyContent: "center",
     overflow: "hidden", elevation: 4,
@@ -507,7 +444,7 @@ inicial: { flex: 1, backgroundColor: "#F2F4F8" },
   circleImg: { width: "100%", height: "100%", resizeMode: "cover" },
   circleIniciais: { color: "#fff", fontSize: 26, fontWeight: "800" },
   circleLapis: {
-    position: "absolute", bottom: 3, right: 3,
+    position: "absolute", bottom: -1, right: -2,
     width: 20, height: 20, borderRadius: 10,
     backgroundColor: "#22C3A3", alignItems: "center", justifyContent: "center",
   },
@@ -517,16 +454,16 @@ inicial: { flex: 1, backgroundColor: "#F2F4F8" },
   idTexto: { color: "#888", fontSize: 11, marginTop: 2 },
   nivelBadge: {
     flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#2C3F69", borderRadius: 20,
+    backgroundColor: "#22c3a343", borderRadius: 20,
     paddingHorizontal: 8, paddingVertical: 3,
     alignSelf: "flex-start", marginTop: 5,
   },
-  nivelTexto: { color: "#FFD700", fontSize: 12, fontWeight: "700" },
+  nivelTexto: { color: "#22c3a3c1", fontSize: 12, fontWeight: "700" },
 
   secao: {
     backgroundColor: "#FFF9F2", marginHorizontal: 16, marginTop: 12,
     borderRadius: 16, paddingVertical: 16,
-    
+
   },
   secaoHeader: {
     flexDirection: "row", justifyContent: "space-between",
@@ -536,21 +473,34 @@ inicial: { flex: 1, backgroundColor: "#F2F4F8" },
   verTodas: { color: "#22C3A3", fontSize: 13, fontWeight: "600" },
 
   // Barra XP — Brxp (trilha branca) + Cirxp (barra verde #1ffc48 original)
-  xpBox: { paddingHorizontal: 16 },
-  xpTopo: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  xpLabel: { color: "#2C3F69", fontWeight: "700", fontSize: 14 },
-  xpValor: { color: "#888", fontSize: 13 },
-  xpTrilha: { height: 20, backgroundColor: "#EBEBF0", borderRadius: 20, overflow: "hidden" },
-  xpBarra: { height: "100%", backgroundColor: "#1ffc48", borderRadius: 20 },
-  xpRodape: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  xpFaltando: { color: "#888", fontSize: 11 },
-  xpNivel: { color: "#888", fontSize: 11 },
-
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, gap: 10 },
-  statCard: { width: (width - 32 - 10 - 24) / 2, backgroundColor: "#FFF9F2", borderRadius: 12, padding: 14 },
-  statIcone: { fontSize: 22, marginBottom: 6 },
-  statValor: { color: "#2C3F69", fontSize: 20, fontWeight: "800" },
-  statRotulo: { color: "#888", fontSize: 12, marginTop: 3 },
+  xpBox:
+    { paddingHorizontal: 16 },
+  xpTopo:
+    { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
+  xpLabel:
+    { color: "#2C3F69", fontWeight: "700", fontSize: 14 },
+  xpValor:
+    { color: "#888", fontSize: 13 },
+  xpTrilha:
+    { height: 20, backgroundColor: "#EBEBF0", borderRadius: 20, overflow: "hidden" },
+  xpBarra:
+    { height: "100%", backgroundColor: "#1ffc48", borderRadius: 20 },
+  xpRodape:
+    { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
+  xpFaltando:
+    { color: "#888", fontSize: 11 },
+  xpNivel:
+    { color: "#888", fontSize: 11 },
+  statsGrid:
+    { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, gap: 10 },
+  statCard:
+    { width: (width - 32 - 10 - 24) / 2, backgroundColor: "#FFF9F2", borderRadius: 12, padding: 14 },
+  statIcone:
+    { fontSize: 22, marginBottom: 6 },
+  statValor:
+    { color: "#2C3F69", fontSize: 20, fontWeight: "800" },
+  statRotulo:
+    { color: "#888", fontSize: 12, marginTop: 3 },
 
   semCq: { color: "#888", fontSize: 13, paddingHorizontal: 16, paddingBottom: 4 },
   cqPerfil: {

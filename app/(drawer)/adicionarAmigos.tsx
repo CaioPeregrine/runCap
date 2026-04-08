@@ -26,6 +26,8 @@ import {
 import { getAuth } from "firebase/auth";
 import * as Clipboard from "expo-clipboard";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from "expo-router";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type Amigo = {
@@ -78,7 +80,7 @@ const STATUS_COLOR = {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function AdicionarAmigos() {
-  
+
   const auth = getAuth();
   const currentUser = auth.currentUser!;
 
@@ -241,14 +243,33 @@ export default function AdicionarAmigos() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-    
+
       <FlatList
         data={amigos}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View>
-            
-            <View style={styles.headerazul}></View>
+
+            <View style={styles.headerazul}>
+
+              <View style={{ paddingHorizontal: 10, paddingTop: 15 }}>
+                <TouchableOpacity onPress={() => router.push("/ranking")}>
+                  <Ionicons name="arrow-back-outline" size={35} color="white" /></TouchableOpacity>
+
+              </View>
+
+              <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+                <Text style={{ color: "white", fontSize: 40, fontWeight: "bold" }}>amigos</Text>
+              </View>
+
+              <View>
+                <Text style={{ color: "#B3B3B3", fontSize: 16, paddingHorizontal: 20 }}>
+                  convide amigos para correr juntos
+                </Text>
+              </View>
+
+
+            </View>
 
             {/* Seu ID */}
             <View style={styles.idCard}>
@@ -366,7 +387,7 @@ export default function AdicionarAmigos() {
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
+  container: { flex: 1, backgroundColor: "#F2F4F8" },
   backBtn: { marginRight: 12 },
   backIcon: { color: "#FFF", fontSize: 22, fontWeight: "300" },
   title: { color: "#FFF", fontSize: 22, fontWeight: "800" },
@@ -409,13 +430,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: "#2C2C2E",
+    backgroundColor: "#FFF9F2",
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 8,
     gap: 10,
   },
-  conviteNome: { flex: 1, color: "#FFF", fontWeight: "600" },
+  conviteNome: { flex: 1, color: "#000000", fontWeight: "600" },
   btnAceitar: {
     backgroundColor: "#30D158",
     width: 32,
@@ -442,15 +463,15 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    backgroundColor: "#6b6bff",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#FFF",
+    color: "#000000",
     fontSize: 14,
   },
   searchBtn: {
-    backgroundColor: "#5E5CE6",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     paddingHorizontal: 16,
     alignItems: "center",
@@ -467,7 +488,7 @@ const styles = StyleSheet.create({
   resultadoItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2C2C2E",
+    backgroundColor: "#FFF9F2",
     marginHorizontal: 16,
     borderRadius: 12,
     padding: 12,
@@ -479,13 +500,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#2C2C2E",
+    backgroundColor: "#FFF9F2",
+    borderBottomColor: "#FFF9F2",
+    borderRadius: 16,
+    alignContent: "center",
+    width: "95%",
+    alignSelf: "center",
+    marginBottom: 5,
+ },
+  rankName: {
+    color: "#000000", fontWeight: "600", fontSize: 15
   },
-  rankName: { color: "#FFF", fontWeight: "600", fontSize: 15 },
-  rankSub: { color: "#8E8E93", fontSize: 12, marginTop: 2 },
+  rankSub: {
+    color: "#8E8E93", fontSize: 12, marginTop: 2
+  },
   addBtn: {
-    backgroundColor: "#5E5CE6",
-    paddingHorizontal: 12,
+    backgroundColor: "#22C3A3",
+    paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 10,
   },

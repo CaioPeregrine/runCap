@@ -505,6 +505,7 @@ export default function RankingScreen() {
         <Feather name="user-plus" size={24} color="white" />
       </TouchableOpacity>
     </View>
+    
   );
 }
 
@@ -521,8 +522,8 @@ const styles = StyleSheet.create({
     paddingTop: 90,
     paddingBottom:50, // ✅ era 90 — reduziu para valor normal
     alignItems: "center",
-    borderBottomLeftRadius:20,
-    borderBottomRightRadius:20
+    borderBottomLeftRadius:25,
+    borderBottomRightRadius:25
    
   },
 
@@ -632,7 +633,7 @@ const styles = StyleSheet.create({
   },
   drawer: {
     position: "absolute",
-    top: 50,
+    top: 10,
     backgroundColor:"transparent",
     height: 50,
     width: 50,

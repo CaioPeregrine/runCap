@@ -20,7 +20,8 @@
       "package": "com.runcap.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+        
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
