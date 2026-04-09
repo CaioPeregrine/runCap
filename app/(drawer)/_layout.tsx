@@ -9,6 +9,7 @@ export default function DrawerLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
+          
         }}
       >
         <Stack.Screen name="home" />

@@ -8,6 +8,8 @@ import { auth } from '@/firebase/firebaseConfig';
 import { db } from '@/firebase/firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { Image } from 'react-native'
+
 
 interface DadosLogin {
   email: string;
@@ -87,7 +89,11 @@ export default function Login() {
     <View style={styles.background}>
       <View style={styles.headerContainer}>
         <View style={styles.circle}>
-          <Text style={styles.logoText}>RUNCAP</Text>
+          <Image 
+  source={require('../../assets/images/RunCap.png')} 
+  style={{ width: 240, height: 200 }} 
+/>
+          
         </View>
       </View>
 

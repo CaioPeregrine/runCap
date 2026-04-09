@@ -311,7 +311,7 @@ export default function Home() {
                 onPress={handlePauseResume}
               >
                 <Text style={styles.btnText}>
-                  {status === "running" ? "⏸  Pausar" : "▶  Retomar"}
+                  {status === "running" ? "  Pausar" : "  Retomar"}
                 </Text>
               </TouchableOpacity>
 
@@ -321,7 +321,7 @@ export default function Home() {
                 disabled={saving}
               >
                 <Text style={styles.btnText}>
-                  {saving ? "Salvando…" : "⏹  Finalizar"}
+                  {saving ? "Salvando…" : "  Finalizar"}
                 </Text>
               </TouchableOpacity>
             </>
@@ -329,10 +329,10 @@ export default function Home() {
         </View>
 
         {status === "running" && (
-          <Text style={styles.statusText}>🔴  Correndo…</Text>
+          <Text style={styles.statusText}>  Correndo…</Text>
         )}
         {status === "paused" && (
-          <Text style={styles.statusText}>⏸  Pausado</Text>
+          <Text style={styles.statusText}>  Pausado</Text>
         )}
       </View>
     </View>

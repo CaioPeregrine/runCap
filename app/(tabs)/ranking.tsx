@@ -493,7 +493,7 @@ export default function RankingScreen() {
             <Text style={styles.menuText}>Ranking</Text>
           </TouchableOpacity>
         </View>
-        <View>
+        <View style= {{width:400,marginRight:100}}>
           <TouchableOpacity style={styles.back} onPress={() => { closeDrawer(); router.push("/auth/login"); }}>
             <Text style={{fontWeight: "900",fontSize: 20,color: "white"}}>sair</Text>
           </TouchableOpacity>
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: "#22c3a3c1",
     borderRadius: 12,
-   
+  
   },
   tabBtn: {
     flex: 1,
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   },
   drawer: {
     position: "absolute",
-    top: 10,
+    top: 25,
     backgroundColor:"transparent",
     height: 50,
     width: 50,
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
-    width: width * 0.62,
+    width: width * 0.70,
     height: "100%",
     backgroundColor: "#ffffff",
     zIndex: 11,
@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 15,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ffffff",
     gap: 12,
@@ -730,7 +730,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    margin: 20,
+    margin: 90,
+    width: 120,
+    
+    
   }
   
 });
