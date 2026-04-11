@@ -11,7 +11,7 @@ import {
   StatusBar,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { db } from "../../firebase/firebaseConfig";
+import { db } from "../../../firebase/firebaseConfig";
 import {
   collection,
   query,
@@ -28,6 +28,7 @@ import * as Clipboard from "expo-clipboard";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from "expo-router";
+import styles from "./styles";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type Amigo = {
@@ -384,142 +385,3 @@ export default function AdicionarAmigos() {
     </View>
   );
 }
-
-// ─── Estilos ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F2F4F8" },
-  backBtn: { marginRight: 12 },
-  backIcon: { color: "#FFF", fontSize: 22, fontWeight: "300" },
-  title: { color: "#FFF", fontSize: 22, fontWeight: "800" },
-  headerazul: {
-    backgroundColor: "#2C3F69",
-    height: 280,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-    marginBottom: 10,
-  },
-  idCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginHorizontal: 16,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
-  },
-  idLabel: { color: "#c1c1c1", fontSize: 12, marginBottom: 4, },
-  idValue: { color: "#000000", fontSize: 20, fontWeight: "800", letterSpacing: 1 },
-  copyBtn: {
-    backgroundColor: "#22C3A3",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  copyBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
-  section: { marginBottom: 16 },
-  sectionTitle: {
-    color: "#8E8E93",
-    fontSize: 13,
-    fontWeight: "600",
-    paddingHorizontal: 20,
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  conviteItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: "#FFF9F2",
-    marginHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 8,
-    gap: 10,
-  },
-  conviteNome: { flex: 1, color: "#000000", fontWeight: "600" },
-  btnAceitar: {
-    backgroundColor: "#30D158",
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnAceitarText: { color: "#FFF", fontWeight: "800" },
-  btnRecusar: {
-    backgroundColor: "#FF3B30",
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnRecusarText: { color: "#FFF", fontWeight: "800" },
-  searchRow: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    marginBottom: 12,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: "#000000",
-    fontSize: 14,
-  },
-  searchBtn: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  searchBtnText: { fontSize: 18 },
-  semResultado: {
-    color: "#636366",
-    textAlign: "center",
-    marginTop: 12,
-    fontSize: 14,
-    paddingHorizontal: 20,
-  },
-  resultadoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFF9F2",
-    marginHorizontal: 16,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  amigoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    backgroundColor: "#FFF9F2",
-    borderBottomColor: "#FFF9F2",
-    borderRadius: 16,
-    alignContent: "center",
-    width: "95%",
-    alignSelf: "center",
-    marginBottom: 5,
- },
-  rankName: {
-    color: "#000000", fontWeight: "600", fontSize: 15
-  },
-  rankSub: {
-    color: "#8E8E93", fontSize: 12, marginTop: 2
-  },
-  addBtn: {
-    backgroundColor: "#22C3A3",
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
-  },
-  addBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
-  chevron: { color: "#636366", fontSize: 22 },
-});

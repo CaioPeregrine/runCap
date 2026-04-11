@@ -1,15 +1,4 @@
-import { View, Text, StyleSheet } from "react-native";
-
-export default function Recup() {
-    return (
-        <View style={styles.background}>
-            <View style={styles.segundaCamada}>
-
-            </View>
-
-        </View>
-    )
-}
+import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
     background: {
@@ -33,3 +22,4 @@ const styles = StyleSheet.create({
 
     }
 })
+export default styles;

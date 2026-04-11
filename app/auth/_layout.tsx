@@ -5,7 +5,7 @@ export default function LayoutCadastro() {
         <Stack>
             <Stack.Screen name="cadastro" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="recup" options={{ headerShown: false }} />
+            <Stack.Screen name="recuperarSenha" options={{ headerShown: false }} />
         </Stack>
     )
 }
