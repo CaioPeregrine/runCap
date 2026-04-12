@@ -12,7 +12,6 @@ import { Image } from 'react-native';
 import styles from './styles';
 
 
-
 interface DadosLogin {
   email: string;
   senha: string;
@@ -88,6 +87,7 @@ export default function Login() {
   };
 
   return (
+
     <View style={styles.background}>
       <View style={styles.headerContainer}>
         <View style={styles.circle}>

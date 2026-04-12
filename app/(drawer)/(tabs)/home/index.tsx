@@ -19,6 +19,10 @@ import Feather from '@expo/vector-icons/Feather';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { AntDesign, Entypo, FontAwesome6, Ionicons } from "@expo/vector-icons";
 import styles from "./styles";
+import { useNavigation } from "expo-router";
+import { DrawerActions } from '@react-navigation/native';
+
+
 
 const { width } = Dimensions.get("window");
 
@@ -213,8 +217,18 @@ export default function Home() {
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
+ const navigation = useNavigation();
   return (
+
+
     <View style={styles.container}>
+       {/* Botão hamburguer */}
+      <TouchableOpacity 
+        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        style={{ position: 'absolute', top: 80, left: 15, zIndex: 10 }}
+      >
+        <Feather name="menu" size={30} color="black" />
+      </TouchableOpacity> 
       {location && (
         <MapView
           ref={mapRef}

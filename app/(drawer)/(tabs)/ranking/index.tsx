@@ -29,7 +29,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
+import { DrawerActions } from '@react-navigation/native';
 import styles from "./styles";
 
 const { width } = Dimensions.get("window");
@@ -367,33 +367,26 @@ export default function RankingScreen() {
     Animated.spring(tabAnim, { toValue: t === "regional" ? 0 : 1, useNativeDriver: false }).start();
   }
 
-  function openDrawer() {
-    setDrawerOpen(true);
-    Animated.spring(drawerAnim, { toValue: 0, useNativeDriver: false }).start();
-  }
-
-  function closeDrawer() {
-    Animated.spring(drawerAnim, { toValue: -width * 0.8, useNativeDriver: false }).start(() => {
-      setDrawerOpen(false);
-    });
-  }
+ 
 
   const users = tab === "regional" ? regionalUsers : amigosUsers;
   const top3  = users.slice(0, 3);
   const rest  = users.slice(3);
 
   const tabLeft = tabAnim.interpolate({ inputRange: [0, 1], outputRange: ["2%", "52%"] });
-
   return (
     <View style={styles.container}>
+         {/* Botão hamburguer */}
+            <TouchableOpacity 
+              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+              style={{ position: 'absolute', top: 80, left: 15, zIndex: 10 }}
+            >
+              <Feather name="menu" size={30} color="white" />
+            </TouchableOpacity> 
       <StatusBar barStyle="light-content" backgroundColor="#2C3F69" />
 
       {/* BLOCO AZUL */}
       <View style={styles.blueBlock}>
-        
-        <TouchableOpacity style={styles.drawer} onPress={openDrawer}>
-          <Feather name="menu" size={30} color="white" />
-        </TouchableOpacity>
         
         <Text style={styles.title}>Ranking</Text>
 
@@ -433,80 +426,6 @@ export default function RankingScreen() {
         </ScrollView>
       )}
 
-      {drawerOpen && (
-        <TouchableOpacity style={styles.drawerOverlay} activeOpacity={1} onPress={closeDrawer} />
-      )}
-      <Animated.View style={[styles.drawerPanel, { transform: [{ translateX: drawerAnim }] }]}>
-        {/* Cabeçalho do usuário */}
-        <View style={styles.userHeader}>
-          <View style={styles.avatar}>
-            {userData?.avatarUrl ? (
-              <Image source={{ uri: userData.avatarUrl }} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.avatarText}>
-                {userData?.nome.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "??"}
-              </Text>
-            )}
-          </View>
-          <Text style={styles.userName}>{userData?.nome || "Carregando..."}</Text>
-          <Text style={styles.userId}>ID: {userData?.codigoId || "..."}</Text>
-          <View style={styles.nivelBadge}>
-            <Text style={styles.nivelText}>⭐ nível {userData?.nivel || 1}</Text>
-          </View>
-        </View>
-
-        {/* Itens do menu */}
-        <View style={styles.menuContainer}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/rotasSugeridas"); }}>
-            <View style={styles.menuIconWrapper}>
-              <FontAwesome6 name="route" size={24} color="#22C3A3" />
-            </View>
-            <Text style={styles.menuText}>Rotas Sugeridas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/conquistas"); }}>
-            <View style={styles.menuIconWrapper}>
-              <Entypo name="medal" size={24} color="#22C3A3" />
-            </View>
-            <Text style={styles.menuText}>Conquistas</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/pontosTuristicos"); }}>
-            <View style={styles.menuIconWrapper}>
-              <Ionicons name="location-outline" size={24} color="#22C3A3" />
-            </View>
-            <Text style={styles.menuText}>Pontos Turísticos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/historico"); }}>
-            <View style={styles.menuIconWrapper}>
-              <AntDesign name="field-time" size={24} color="#22C3A3" />
-            </View>
-            <Text style={styles.menuText}>Histórico de Corridas</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/(drawer)/adicionarAmigos"); }}>
-            <View style={styles.menuIconWrapper}>
-              <Feather name="user-plus" size={24} color="#22C3A3" />
-            </View>
-            <Text style={styles.menuText}>Adicionar Amigos</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => { closeDrawer(); router.push("/ranking"); }}>
-            <View style={styles.menuIconWrapper}>
-              <Octicons name="trophy" size={24} color="#22C3A3" />
-            </View>
-            <Text style={styles.menuText}>Ranking</Text>
-          </TouchableOpacity>
-        </View>
-        <View style= {{width:400,marginRight:100}}>
-          <TouchableOpacity style={styles.back} onPress={() => { closeDrawer(); router.push("/auth/login"); }}>
-            <Text style={{fontWeight: "900",fontSize: 20,color: "white"}}>sair</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => router.push("/(drawer)/adicionarAmigos" as const)}>
-        <Feather name="user-plus" size={24} color="white" />
-      </TouchableOpacity>
     </View>
     
   );
