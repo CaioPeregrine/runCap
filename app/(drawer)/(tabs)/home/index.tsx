@@ -1,234 +1,163 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  Animated,
-  Dimensions,
-} from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import { View, Text, TouchableOpacity, Animated } from "react-native";
+import MapView, { Marker, Polyline, Polygon } from "react-native-maps";
 import * as Location from "expo-location";
-import { db } from "../../../../firebase/firebaseConfig"; // ajuste se necessário
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
 import { router } from "expo-router";
 import Octicons from '@expo/vector-icons/Octicons';
 import Feather from '@expo/vector-icons/Feather';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { AntDesign, Entypo, FontAwesome6, Ionicons } from "@expo/vector-icons";
-import styles from "./styles";
-import { useNavigation } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
 import { DrawerActions } from '@react-navigation/native';
+import { db } from "../../../../firebase/firebaseConfig";
+import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import styles from "./styles";
 
-
-
-const { width } = Dimensions.get("window");
-
-// ─── Tipos ────────────────────────────────────────────────────────────────────
 type Coord = { latitude: number; longitude: number };
-type RunStatus = "idle" | "running" | "paused";
 
-// ─── Utilitários ──────────────────────────────────────────────────────────────
+type Corrida = {
+  id: string;
+  uid: string;
+  rota: Coord[];
+  distancia_km: number;
+  tempo_formatado: string;
+  pace: string;
+  criadoEm: any;
+  cor: string;
+  nomeCorredor: string;
+};
 
-/** Distância em metros entre dois pontos (Haversine) */
-function haversineDistance(a: Coord, b: Coord): number {
+// Paleta de cores para as corridas
+const CORES = [
+  "#1a58e9", "#e91a1a", "#1ae95a", "#e9c01a",
+  "#9b1ae9", "#1ae9d4", "#e9681a", "#e91aa0",
+  "#4CAF50", "#FF5722",
+];
+
+function formatDate(timestamp: any): string {
+  if (!timestamp) return "Data desconhecida";
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+// Verifica se os pontos formam uma área fechada (início e fim próximos)
+function isAreaFechada(rota: Coord[]): boolean {
+  if (rota.length < 4) return false;
+  const inicio = rota[0];
+  const fim = rota[rota.length - 1];
   const R = 6371000;
-  const toRad = (v: number) => (v * Math.PI) / 180;
-  const dLat = toRad(b.latitude - a.latitude);
-  const dLon = toRad(b.longitude - a.longitude);
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.latitude)) *
-      Math.cos(toRad(b.latitude)) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+  const dLat = ((fim.latitude - inicio.latitude) * Math.PI) / 180;
+  const dLon = ((fim.longitude - inicio.longitude) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((inicio.latitude * Math.PI) / 180) *
+    Math.cos((fim.latitude * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  const distancia = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return distancia < 100; // menos de 100m entre início e fim = área fechada
 }
 
-/** Segundos → "MM:SS" */
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
-  const s = (seconds % 60).toString().padStart(2, "0");
-  return `${m}:${s}`;
-}
-
-/** Pace em "M:SS /km" */
-function calcPace(distM: number, seconds: number): string {
-  if (distM < 10) return "--:-- /km";
-  const secPerKm = seconds / (distM / 1000);
-  const pm = Math.floor(secPerKm / 60);
-  const ps = Math.floor(secPerKm % 60).toString().padStart(2, "0");
-  return `${pm}:${ps} /km`;
-}
-
-// ─── Componente ───────────────────────────────────────────────────────────────
 export default function Home() {
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
-  const [routeCoords, setRouteCoords] = useState<Coord[]>([]);
-  const [status, setStatus] = useState<RunStatus>("idle");
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [distanceMeters, setDistanceMeters] = useState(0);
-  const [saving, setSaving] = useState(false);
-
+  const [location, setLocation] = useState<any>(null);
+  const [corridas, setCorridas] = useState<Corrida[]>([]);
+  const [corridaSelecionada, setCorridaSelecionada] = useState<Corrida | null>(null);
+  const cardAnim = useRef(new Animated.Value(200)).current;
   const mapRef = useRef<MapView>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigation = useNavigation();
+  const currentUser = getAuth().currentUser;
 
-  function toggleDrawer() {
-    setDrawerOpen((prev) => !prev);
-  }
-
-  function closeDrawer() {
-    setDrawerOpen(false);
-  }
-
-  // Ref para acessar status atual dentro do watchPositionAsync (evita closure stale)
-  const statusRef = useRef<RunStatus>("idle");
-  statusRef.current = status;
-
-  // ── Permissão + posição inicial — igual ao original ────────────────────────
-  async function requestLocationPermissions() {
-    const { status: perm } = await Location.requestForegroundPermissionsAsync();
-    if (perm === "granted") {
-      const currentPosition = await Location.getCurrentPositionAsync({});
-      setLocation(currentPosition);
-    }
-  }
-
+  // ── Localização ────────────────────────────────────────────────────────────
   useEffect(() => {
-    requestLocationPermissions();
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const pos = await Location.getCurrentPositionAsync({});
+        setLocation(pos);
+      }
+    })();
   }, []);
 
-  // ── watchPositionAsync contínuo — igual ao original + polyline ─────────────
   useEffect(() => {
     Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.Highest,
-        timeInterval: 1000,
-        distanceInterval: 1,
-      },
-      (Response) => {
-        setLocation(Response);
-
-        // Câmera 3D — igual ao original
-        mapRef.current?.animateCamera({
-          pitch: 70,
-          center: Response.coords,
-        });
-
-        // Acumula rota e distância somente quando correndo
-        if (statusRef.current === "running") {
-          const newCoord: Coord = {
-            latitude: Response.coords.latitude,
-            longitude: Response.coords.longitude,
-          };
-
-          setRouteCoords((prev) => {
-            if (prev.length > 0) {
-              const extra = haversineDistance(prev[prev.length - 1], newCoord);
-              if (extra > 2) {
-                // filtra ruído do GPS (< 2m não conta)
-                setDistanceMeters((d) => d + extra);
-                return [...prev, newCoord];
-              }
-              return prev;
-            }
-            return [newCoord];
-          });
-        }
+      { accuracy: Location.Accuracy.Highest, timeInterval: 1000, distanceInterval: 1 },
+      (response) => {
+        setLocation(response);
+        mapRef.current?.animateCamera({ pitch: 70, center: response.coords });
       }
     );
   }, []);
 
-  // ── INICIAR ────────────────────────────────────────────────────────────────
-  function handleStart() {
-    setRouteCoords([]);
-    setDistanceMeters(0);
-    setElapsedSeconds(0);
-    setStatus("running");
+  // ── Busca corridas minhas + amigos ─────────────────────────────────────────
+  useEffect(() => {
+    if (!currentUser) return;
 
-    timerRef.current = setInterval(() => {
-      setElapsedSeconds((s) => s + 1);
-    }, 1000);
-  }
+    async function buscarCorridas() {
+      try {
+        // Busca lista de amigos
+        const userSnap = await getDoc(doc(db, "usuarios", currentUser!.uid));
+        const amigos: string[] = userSnap.data()?.amigos || [];
+        const ids = [currentUser!.uid, ...amigos];
 
-  // ── PAUSAR / RETOMAR ───────────────────────────────────────────────────────
-  function handlePauseResume() {
-    if (status === "running") {
-      setStatus("paused");
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+        // Busca nome de cada corredor
+        const nomes: Record<string, string> = {};
+        await Promise.all(ids.map(async (uid) => {
+          const snap = await getDoc(doc(db, "usuarios", uid));
+          nomes[uid] = snap.data()?.nome || "Corredor";
+        }));
+
+        // Busca corridas de cada uid
+        let todasCorridas: Corrida[] = [];
+        let corIndex = 0;
+
+        await Promise.all(ids.map(async (uid) => {
+          const q = query(collection(db, "corridas"), where("uid", "==", uid));
+          const snap = await getDocs(q);
+          snap.forEach((d) => {
+            const data = d.data();
+            if (data.rota && data.rota.length > 1) {
+              todasCorridas.push({
+                id: d.id,
+                uid,
+                rota: data.rota,
+                distancia_km: data.distancia_km || 0,
+                tempo_formatado: data.tempo_formatado || "00:00",
+                pace: data.pace || "--:--",
+                criadoEm: data.criadoEm,
+                cor: CORES[corIndex++ % CORES.length],
+                nomeCorredor: nomes[uid],
+              });
+            }
+          });
+        }));
+
+        setCorridas(todasCorridas);
+      } catch (e) {
+        console.error("Erro ao buscar corridas:", e);
       }
-    } else if (status === "paused") {
-      setStatus("running");
-      timerRef.current = setInterval(() => {
-        setElapsedSeconds((s) => s + 1);
-      }, 1000);
     }
+
+    buscarCorridas();
+  }, [currentUser]);
+
+  // ── Abre card ao clicar numa corrida ───────────────────────────────────────
+  function abrirCard(corrida: Corrida) {
+    setCorridaSelecionada(corrida);
+    Animated.spring(cardAnim, { toValue: 0, useNativeDriver: true }).start();
   }
 
-  // ── FINALIZAR ──────────────────────────────────────────────────────────────
-  async function handleFinish() {
-    setStatus("idle");
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setSaving(true);
-
-    try {
-      const auth = getAuth();
-      const uid = auth.currentUser?.uid;
-
-      if (!uid) {
-        Alert.alert("Erro", "Usuário não autenticado.");
-        return;
-      }
-
-      const pace = calcPace(distanceMeters, elapsedSeconds);
-      await addDoc(collection(db, "corridas"), {
-        uid,                          // ← campo uid adicionado
-        distancia_m: distanceMeters,
-        distancia_km: parseFloat((distanceMeters / 1000).toFixed(3)),
-        duracao_min: Math.floor(elapsedSeconds / 60), // ← campo para o perfil
-        tempo_s: elapsedSeconds,
-        tempo_formatado: formatTime(elapsedSeconds),
-        pace,
-        rota: routeCoords,
-        criadoEm: serverTimestamp(),
-      });
-
-      Alert.alert(
-        "✅ Corrida salva!",
-        `📏 ${(distanceMeters / 1000).toFixed(2)} km\n` +
-          `⏱ ${formatTime(elapsedSeconds)}\n` +
-          `⚡ Pace: ${pace}`
-      );
-    } catch (e) {
-      Alert.alert("Erro ao salvar", String(e));
-    } finally {
-      setSaving(false);
-      setRouteCoords([]);
-      setDistanceMeters(0);
-      setElapsedSeconds(0);
-    }
+  function fecharCard() {
+    Animated.spring(cardAnim, { toValue: 300, useNativeDriver: true }).start(() => {
+      setCorridaSelecionada(null);
+    });
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
- const navigation = useNavigation();
   return (
-
-
     <View style={styles.container}>
-       {/* Botão hamburguer */}
-      <TouchableOpacity 
+      {/* Botão hamburguer */}
+      <TouchableOpacity
         onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-        style={{ position: 'absolute', top: 80, left: 15, zIndex: 10 }}
+        style={{ position: 'absolute', top: 50, left: 15, zIndex: 10 }}
       >
         <Feather name="menu" size={30} color="black" />
-      </TouchableOpacity> 
+      </TouchableOpacity>
+
       {location && (
         <MapView
           ref={mapRef}
@@ -238,117 +167,123 @@ export default function Home() {
             longitude: location.coords.longitude,
             latitudeDelta: 0.005,
             longitudeDelta: 0.005,
-          }}>
-          {/* Marcador — igual ao original */}
-          <Marker
-            coordinate={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }}
-          />
+          }}
+          onPress={fecharCard}
+        >
+          {/* Marcador posição atual */}
+          <Marker coordinate={{
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          }} />
 
-          {/* ✅ Polyline — rastro da corrida em vermelho */}
-          {routeCoords.length > 1 && (
-            <Polyline
-              coordinates={routeCoords}
-              strokeColor="#1a58e9"
-              strokeWidth={5}
-            />
-          )}
+          {/* Polylines e Polygons das corridas */}
+          {corridas.map((corrida) => (
+            <React.Fragment key={corrida.id}>
+              {isAreaFechada(corrida.rota) ? (
+                // Área fechada — desenha polígono preenchido
+                <Polygon
+                  coordinates={corrida.rota}
+                  strokeColor={corrida.cor}
+                  fillColor={corrida.cor + "40"} // 25% opacidade
+                  strokeWidth={3}
+                  tappable
+                  onPress={() => abrirCard(corrida)}
+                />
+              ) : (
+                // Rota aberta — desenha polyline
+                <Polyline
+                  coordinates={corrida.rota}
+                  strokeColor={corrida.cor}
+                  strokeWidth={4}
+                  tappable
+                  onPress={() => abrirCard(corrida)}
+                />
+              )}
+            </React.Fragment>
+          ))}
         </MapView>
       )}
 
-      {/* ── Painel inferior ─────────────────────────────────────────────── */}
+      {/* ── Card popup da corrida selecionada ── */}
+      {corridaSelecionada && (
+        <Animated.View style={[{
+          position: 'absolute',
+          bottom: 160,
+          left: 16,
+          right: 16,
+          backgroundColor: '#fff',
+          borderRadius: 16,
+          padding: 16,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOpacity: 0.15,
+          shadowRadius: 10,
+          zIndex: 20,
+          borderLeftWidth: 5,
+          borderLeftColor: corridaSelecionada.cor,
+        }, { transform: [{ translateY: cardAnim }] }]}>
+          <TouchableOpacity
+            onPress={fecharCard}
+            style={{ position: 'absolute', top: 10, right: 10 }}
+          >
+            <Feather name="x" size={20} color="#888" />
+          </TouchableOpacity>
+
+          <Text style={{ fontWeight: '800', fontSize: 16, color: '#2C3F69', marginBottom: 4 }}>
+            🏃 {corridaSelecionada.nomeCorredor}
+          </Text>
+          <Text style={{ color: '#666', fontSize: 12, marginBottom: 10 }}>
+            📅 {formatDate(corridaSelecionada.criadoEm)}
+          </Text>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#2C3F69' }}>
+                {corridaSelecionada.distancia_km.toFixed(2)}
+              </Text>
+              <Text style={{ fontSize: 11, color: '#888' }}>km</Text>
+            </View>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#2C3F69' }}>
+                {corridaSelecionada.tempo_formatado}
+              </Text>
+              <Text style={{ fontSize: 11, color: '#888' }}>tempo</Text>
+            </View>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#2C3F69' }}>
+                {corridaSelecionada.pace}
+              </Text>
+              <Text style={{ fontSize: 11, color: '#888' }}>pace</Text>
+            </View>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* ── Painel inferior ── */}
       <View style={styles.panel}>
-        {/* Métricas — visíveis durante a corrida */}
-        {status !== "idle" && (
-          <View style={styles.metricsRow}>
-            <View style={styles.metric}>
-              <Text style={styles.metricValue}>
-                {(distanceMeters / 1000).toFixed(2)}
-              </Text>
-              <Text style={styles.metricLabel}>km</Text>
-            </View>
-            <View style={styles.metric}>
-              <Text style={styles.metricValue}>
-                {formatTime(elapsedSeconds)}
-              </Text>
-              <Text style={styles.metricLabel}>tempo</Text>
-            </View>
-            <View style={styles.metric}>
-              <Text style={styles.metricValue}>
-                {calcPace(distanceMeters, elapsedSeconds)}
-              </Text>
-              <Text style={styles.metricLabel}>pace</Text>
-            </View>
-          </View>
-        )}
-
-        {/* Botões */}
         <View style={styles.buttonsRow}>
-          {status === "idle" && (
-            <TouchableOpacity
-              style={[styles.btn, styles.btnStart]}
-              onPress={handleStart}
-            >
-              <Text style={styles.btnText}>▶  Iniciar Corrida</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.btn, styles.btnStart]}
+            onPress={() => router.push('../../../telaCorrendo')}
+          >
+            <Text style={styles.btnText}>▶  Iniciar Corrida</Text>
+          </TouchableOpacity>
 
-           
-          )}
-         <View style = {styles.cards}>
-          <TouchableOpacity style={styles.btncards}>
-            <Octicons name="location" size={24} color="#22C3A3" />
-            <View>
+          <View style={styles.cards}>
+            <TouchableOpacity style={styles.btncards}>
+              <Octicons name="location" size={24} color="#22C3A3" />
               <Text>Descobrir</Text>
-            </View>
             </TouchableOpacity>
-
-          <TouchableOpacity style={styles.btncards}>
-            <Feather name="check-circle" size={24} color="#22C3A3" />
-            <View>
+            <TouchableOpacity style={styles.btncards}>
+              <Feather name="check-circle" size={24} color="#22C3A3" />
               <Text>Metas</Text>
-            </View>
             </TouchableOpacity>
-
-          <TouchableOpacity style={styles.btncards}>
-            <FontAwesome5 name="route" size={24} color="#22C3A3" /><View>
-              <Text>Rotas</Text></View>
+            <TouchableOpacity style={styles.btncards}>
+              <FontAwesome5 name="route" size={24} color="#22C3A3" />
+              <Text>Rotas</Text>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.estatis}></View>
-
-          {(status === "running" || status === "paused") && (
-            <>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPause]}
-                onPress={handlePauseResume}
-              >
-                <Text style={styles.btnText}>
-                  {status === "running" ? "  Pausar" : "  Retomar"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.btn, styles.btnFinish]}
-                onPress={handleFinish}
-                disabled={saving}
-              >
-                <Text style={styles.btnText}>
-                  {saving ? "Salvando…" : "  Finalizar"}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
         </View>
-
-        {status === "running" && (
-          <Text style={styles.statusText}>  Correndo…</Text>
-        )}
-        {status === "paused" && (
-          <Text style={styles.statusText}>  Pausado</Text>
-        )}
       </View>
     </View>
   );
