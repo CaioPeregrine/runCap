@@ -3,7 +3,8 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
     background: {
         flex: 1,
-        backgroundColor: "#2C3F69"
+        backgroundColor: "#2C3F69",
+        margin: 0,
     },
 
     segundaCamada: {

@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "runcap",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -18,13 +17,16 @@
     },
     "android": {
       "package": "com.runcap.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff",
-        
+        "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAKJrk8lYlpZ6Rk_j3DEtpaehtrFSqtCTg"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -33,6 +35,7 @@
     },
     "plugins": [
       "expo-router"
+     
     ],
     "experiments": {
       "typedRoutes": true

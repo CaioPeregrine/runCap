@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "34660717424",
+    "firebase_url": "https://runcap-ee9fe-default-rtdb.firebaseio.com",
+    "project_id": "runcap-ee9fe",
+    "storage_bucket": "runcap-ee9fe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:34660717424:android:aeb6a9c8a9071fa6f0f5b5",
+        "android_client_info": {
+          "package_name": "com.runcap.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "34660717424-mk1b42rjmkci2f1pvsv0gsmqvegssr1g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6IzOW61e8evjZK_whoeOJLiVoLrqJVNM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "34660717424-mk1b42rjmkci2f1pvsv0gsmqvegssr1g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
