@@ -3,17 +3,24 @@ import { View, Text, TouchableOpacity, Alert } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import { db } from "../../firebase/firebaseConfig";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+
+import {
+  collection, addDoc, serverTimestamp,
+  doc, getDoc, updateDoc,
+} from "firebase/firestore";
+
 import { getAuth } from "firebase/auth";
 import { router } from "expo-router";
 import Feather from '@expo/vector-icons/Feather';
 import styles from "./styles";
+
 
 //  PASSO 1: coloque o IP da sua máquina na rede local
 // Android físico → IP do seu PC (ex: 192.168.1.100)
 // Emulador Android → 10.0.2.2
 // iOS Simulator → localhost
 const API_URL = "runcapapi-production.up.railway.app"; // ← TROQUE pelo seu IP
+
 
 type Coord = { latitude: number; longitude: number };
 type RunStatus = "running" | "paused";
@@ -44,13 +51,50 @@ function calcPace(distM: number, seconds: number): string {
   return `${pm}:${ps} /km`;
 }
 
+function dataHoje(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+async function atualizarSequencia(uid: string) {
+  try {
+    const uRef  = doc(db, "usuarios", uid);
+    const uSnap = await getDoc(uRef);
+    const data  = uSnap.data();
+    if (!data) return;
+
+    const hoje = dataHoje();
+    const diasCorridos: string[] = data.diasCorridos ?? [];
+    if (diasCorridos.includes(hoje)) return;
+
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    const ontemStr = ontem.toISOString().split("T")[0];
+    const correuOntem = diasCorridos.includes(ontemStr);
+
+    const sequenciaAtual: number = data.sequenciaAtual ?? 0;
+    const novaSequencia = correuOntem ? sequenciaAtual + 1 : 1;
+    const maiorSequencia: number = data.maiorSequencia ?? 0;
+    const novaMaior = Math.max(maiorSequencia, novaSequencia);
+
+    await updateDoc(uRef, {
+      diasCorridos:   [...diasCorridos, hoje],
+      sequenciaAtual: novaSequencia,
+      maiorSequencia: novaMaior,
+    });
+  } catch (e) {
+    console.error("Erro ao atualizar sequência:", e);
+  }
+}
+
 export default function Correndo() {
-  const [location, setLocation] = useState<any>(null);
-  const [routeCoords, setRouteCoords] = useState<Coord[]>([]);
-  const [status, setStatus] = useState<RunStatus>("running");
+  const [location, setLocation]             = useState<any>(null);
+  const [routeCoords, setRouteCoords]       = useState<Coord[]>([]);
+  const [status, setStatus]                 = useState<RunStatus>("running");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [distanceMeters, setDistanceMeters] = useState(0);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]                 = useState(false);
+  const [heading, setHeading]               = useState(0);
+
 
   // ✅ PASSO 2: estado para a mensagem da IA
   const [iaMsg, setIaMsg] = useState<string>("");
@@ -58,12 +102,15 @@ export default function Correndo() {
 
   const mapRef = useRef<MapView>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+
   const statusRef = useRef<RunStatus>("running");
   const distanceRef = useRef(0); // ref para acessar dentro do watchPosition
   // ✅ PASSO 3: controla em qual km a IA foi chamada pela última vez
   const lastNarratedKm = useRef(0);
 
   statusRef.current = status;
+
 
   // ✅ PASSO 4: função que chama sua API
   async function narrarPonto(coord: Coord, distanciaAtualM: number) {
@@ -101,6 +148,7 @@ export default function Correndo() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
+  // Posição inicial
   useEffect(() => {
     (async () => {
       const { status: perm } = await Location.requestForegroundPermissionsAsync();
@@ -111,16 +159,51 @@ export default function Correndo() {
     })();
   }, []);
 
+  // ── Bússola — usa o sensor de orientação do dispositivo ──────────────────
+  // Location.watchHeadingAsync retorna o ângulo magnético real do aparelho,
+  // independente de o usuário estar parado ou em movimento.
+  // É muito mais confiável que response.coords.heading (que retorna -1 parado).
+  useEffect(() => {
+    let subscription: Location.LocationSubscription | null = null;
+
+    (async () => {
+      subscription = await Location.watchHeadingAsync((headingData) => {
+        // magHeading: direção magnética em graus (0-360)
+        // trueHeading: direção verdadeira (mais precisa, usa GPS + bússola)
+        const graus = headingData.trueHeading >= 0
+          ? headingData.trueHeading
+          : headingData.magHeading;
+
+        setHeading(graus);
+
+        // Rotaciona o mapa junto com a bússola
+        mapRef.current?.animateCamera({
+          heading: graus,
+          pitch: 70,
+        });
+      });
+    })();
+
+    return () => { subscription?.remove(); };
+  }, []);
+
+  // Rastreamento de posição/rota
   useEffect(() => {
     Location.watchPositionAsync(
       { accuracy: Location.Accuracy.Highest, timeInterval: 1000, distanceInterval: 1 },
       (response) => {
         setLocation(response);
-        mapRef.current?.animateCamera({ pitch: 70, center: response.coords });
+
+        // Centraliza a câmera no usuário sem alterar o heading
+        // (o heading já é controlado pelo watchHeadingAsync acima)
+        mapRef.current?.animateCamera({
+          center: response.coords,
+          pitch: 70,
+        });
 
         if (statusRef.current === "running") {
           const newCoord: Coord = {
-            latitude: response.coords.latitude,
+            latitude:  response.coords.latitude,
             longitude: response.coords.longitude,
           };
 
@@ -170,22 +253,25 @@ export default function Correndo() {
       if (!uid) { Alert.alert("Erro", "Usuário não autenticado."); return; }
 
       const pace = calcPace(distanceMeters, elapsedSeconds);
+
       await addDoc(collection(db, "corridas"), {
         uid,
-        distancia_m: distanceMeters,
-        distancia_km: parseFloat((distanceMeters / 1000).toFixed(3)),
-        duracao_min: Math.floor(elapsedSeconds / 60),
-        tempo_s: elapsedSeconds,
+        distancia_m:     distanceMeters,
+        distancia_km:    parseFloat((distanceMeters / 1000).toFixed(3)),
+        duracao_min:     Math.floor(elapsedSeconds / 60),
+        tempo_s:         elapsedSeconds,
         tempo_formatado: formatTime(elapsedSeconds),
         pace,
-        rota: routeCoords,
-        criadoEm: serverTimestamp(),
+        rota:            routeCoords,
+        criadoEm:        serverTimestamp(),
       });
+
+      await atualizarSequencia(uid);
 
       Alert.alert(
         "✅ Corrida salva!",
         `📏 ${(distanceMeters / 1000).toFixed(2)} km\n⏱ ${formatTime(elapsedSeconds)}\n⚡ Pace: ${pace}`,
-        [{ text: "OK", onPress: () => router.replace('/(drawer)/(tabs)/home') }]
+        [{ text: "OK", onPress: () => router.replace("/(drawer)/(tabs)/home") }]
       );
     } catch (e) {
       Alert.alert("Erro ao salvar", String(e));
@@ -198,30 +284,47 @@ export default function Correndo() {
     <View style={styles.container}>
       <TouchableOpacity
         onPress={() => router.back()}
-        style={{ position: 'absolute', top: 50, left: 15, zIndex: 10 }}
+        style={{ position: "absolute", top: 50, left: 15, zIndex: 10 }}
       >
         <Feather name="arrow-left" size={30} color="black" />
       </TouchableOpacity>
+        
+        
+   
 
       {location && (
         <MapView
           ref={mapRef}
           style={styles.map}
+          rotateEnabled
+          pitchEnabled
           initialRegion={{
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
+            latitude:      location.coords.latitude,
+            longitude:     location.coords.longitude,
             latitudeDelta: 0.005,
             longitudeDelta: 0.005,
           }}
         >
-          <Marker coordinate={{ latitude: location.coords.latitude, longitude: location.coords.longitude }} />
+          {/* Marcador que gira com a bússola */}
+          <Marker
+            coordinate={{
+              latitude:  location.coords.latitude,
+              longitude: location.coords.longitude,
+            }}
+            rotation={heading}
+            anchor={{ x: 0.5, y: 0.5 }}
+            flat={true} // flat:true faz o marcador girar colado no mapa
+          />
+
           {routeCoords.length > 1 && (
             <Polyline coordinates={routeCoords} strokeColor="#1a58e9" strokeWidth={5} />
+            
           )}
         </MapView>
       )}
 
       <View style={styles.panel}>
+
         {/* ✅ PASSO 6: balão da IA aparece quando tem mensagem */}
         {(iaMsg || iaLoading) && (
           <View style={{

@@ -12,6 +12,7 @@ import { db } from "../../../../firebase/firebaseConfig";
 import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import styles from "./styles";
+import Ofensiva from "../../../../components/ofensiva/ofensiva";
 
 type Coord = { latitude: number; longitude: number };
 
@@ -157,6 +158,9 @@ export default function Home() {
       >
         <Feather name="menu" size={30} color="black" />
       </TouchableOpacity>
+       <View style={{ position: "absolute", top: 50, right: 15, zIndex: 10 }}>
+          <Ofensiva uid={getAuth().currentUser?.uid ?? ""} modoCompacto={true} />
+        </View>
 
       {location && (
         <MapView
