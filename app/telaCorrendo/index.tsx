@@ -9,11 +9,11 @@ import { router } from "expo-router";
 import Feather from '@expo/vector-icons/Feather';
 import styles from "./styles";
 
-// ✅ PASSO 1: coloque o IP da sua máquina na rede local
+//  PASSO 1: coloque o IP da sua máquina na rede local
 // Android físico → IP do seu PC (ex: 192.168.1.100)
 // Emulador Android → 10.0.2.2
 // iOS Simulator → localhost
-const API_URL = "http://192.168.1.100:3000"; // ← TROQUE pelo seu IP
+const API_URL = "runcapapi-production.up.railway.app"; // ← TROQUE pelo seu IP
 
 type Coord = { latitude: number; longitude: number };
 type RunStatus = "running" | "paused";
