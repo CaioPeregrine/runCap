@@ -364,7 +364,7 @@ export default function Correndo() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.statusText}>{status === "running" ? "🏃 Correndo…" : "⏸ Pausado"}</Text>
+        <Text style={styles.statusText}>{status === "running" ? " Correndo…" : " Pausado"}</Text>
       </View>
     </View>
   );
