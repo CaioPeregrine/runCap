@@ -290,7 +290,7 @@ export default function Correndo() {
       </TouchableOpacity>
         
         
-   
+                           
 
       {location && (
         <MapView
