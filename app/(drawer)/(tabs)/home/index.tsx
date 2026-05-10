@@ -14,6 +14,16 @@ import { getAuth } from "firebase/auth";
 import styles from "./styles";
 import Ofensiva from "../../../../components/ofensiva/ofensiva";
 
+// ── NOVO: tipo do ponto turístico ──────────────────────────────────────────
+type PontoTuristico = {
+  id: string;
+  nome: string;
+  descricao: string;
+  latitude: number;
+  longitude: number;
+  imageUrl: string;
+};
+
 type Coord = { latitude: number; longitude: number };
 
 type Corrida = {
@@ -28,7 +38,6 @@ type Corrida = {
   nomeCorredor: string;
 };
 
-// Paleta de cores para as corridas
 const CORES = [
   "#1a58e9", "#e91a1a", "#1ae95a", "#e9c01a",
   "#9b1ae9", "#1ae9d4", "#e9681a", "#e91aa0",
@@ -41,7 +50,6 @@ function formatDate(timestamp: any): string {
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-// Verifica se os pontos formam uma área fechada (início e fim próximos)
 function isAreaFechada(rota: Coord[]): boolean {
   if (rota.length < 4) return false;
   const inicio = rota[0];
@@ -52,19 +60,23 @@ function isAreaFechada(rota: Coord[]): boolean {
   const a = Math.sin(dLat / 2) ** 2 + Math.cos((inicio.latitude * Math.PI) / 180) *
     Math.cos((fim.latitude * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   const distancia = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return distancia < 100; // menos de 100m entre início e fim = área fechada
+  return distancia < 100;
 }
 
 export default function Home() {
   const [location, setLocation] = useState<any>(null);
   const [corridas, setCorridas] = useState<Corrida[]>([]);
   const [corridaSelecionada, setCorridaSelecionada] = useState<Corrida | null>(null);
+
+  // ── NOVO: estado para os pontos turísticos ─────────────────────────────
+  const [pontos, setPontos] = useState<PontoTuristico[]>([]);
+
   const cardAnim = useRef(new Animated.Value(200)).current;
   const mapRef = useRef<MapView>(null);
   const navigation = useNavigation();
   const currentUser = getAuth().currentUser;
 
-  // ── Localização ────────────────────────────────────────────────────────────
+  // ── Localização ────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -85,25 +97,32 @@ export default function Home() {
     );
   }, []);
 
-  // ── Busca corridas minhas + amigos ─────────────────────────────────────────
+  // ── NOVO: busca os pontos turísticos do Firestore ──────────────────────
+  useEffect(() => {
+    getDocs(collection(db, "pontosTuristicos")).then((snap) => {
+      const lista: PontoTuristico[] = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<PontoTuristico, "id">),
+      }));
+      setPontos(lista);
+    });
+  }, []);
+
+  // ── Busca corridas minhas + amigos ─────────────────────────────────────
   useEffect(() => {
     if (!currentUser) return;
 
     async function buscarCorridas() {
       try {
-        // Busca lista de amigos
         const userSnap = await getDoc(doc(db, "usuarios", currentUser!.uid));
         const amigos: string[] = userSnap.data()?.amigos || [];
         const ids = [currentUser!.uid, ...amigos];
-
-        // Busca nome de cada corredor
         const nomes: Record<string, string> = {};
         await Promise.all(ids.map(async (uid) => {
           const snap = await getDoc(doc(db, "usuarios", uid));
           nomes[uid] = snap.data()?.nome || "Corredor";
         }));
 
-        // Busca corridas de cada uid
         let todasCorridas: Corrida[] = [];
         let corIndex = 0;
 
@@ -137,7 +156,7 @@ export default function Home() {
     buscarCorridas();
   }, [currentUser]);
 
-  // ── Abre card ao clicar numa corrida ───────────────────────────────────────
+  // ── Abre/fecha card de corrida ─────────────────────────────────────────
   function abrirCard(corrida: Corrida) {
     setCorridaSelecionada(corrida);
     Animated.spring(cardAnim, { toValue: 0, useNativeDriver: true }).start();
@@ -158,9 +177,10 @@ export default function Home() {
       >
         <Feather name="menu" size={30} color="black" />
       </TouchableOpacity>
-       <View style={{ position: "absolute", top: 50, right: 15, zIndex: 10 }}>
-          <Ofensiva uid={getAuth().currentUser?.uid ?? ""} modoCompacto={true} />
-        </View>
+
+      <View style={{ position: "absolute", top: 50, right: 15, zIndex: 10 }}>
+        <Ofensiva uid={getAuth().currentUser?.uid ?? ""} modoCompacto={true} />
+      </View>
 
       {location && (
         <MapView
@@ -184,17 +204,15 @@ export default function Home() {
           {corridas.map((corrida) => (
             <React.Fragment key={corrida.id}>
               {isAreaFechada(corrida.rota) ? (
-                // Área fechada — desenha polígono preenchido
                 <Polygon
                   coordinates={corrida.rota}
                   strokeColor={corrida.cor}
-                  fillColor={corrida.cor + "40"} // 25% opacidade
+                  fillColor={corrida.cor + "40"}
                   strokeWidth={3}
                   tappable
                   onPress={() => abrirCard(corrida)}
                 />
               ) : (
-                // Rota aberta — desenha polyline
                 <Polyline
                   coordinates={corrida.rota}
                   strokeColor={corrida.cor}
@@ -205,10 +223,21 @@ export default function Home() {
               )}
             </React.Fragment>
           ))}
+
+          {/* ── NOVO: marcadores dos pontos turísticos ── */}
+          {pontos.map((ponto) => (
+            <Marker
+              key={ponto.id}
+              coordinate={{ latitude: ponto.latitude, longitude: ponto.longitude }}
+              title={ponto.nome}
+              description={ponto.descricao}
+              pinColor="#22C3A3"
+            />
+          ))}
         </MapView>
       )}
 
-      {/* ── Card popup da corrida selecionada ── */}
+      {/* Card popup da corrida selecionada */}
       {corridaSelecionada && (
         <Animated.View style={[{
           position: 'absolute',
@@ -263,7 +292,7 @@ export default function Home() {
         </Animated.View>
       )}
 
-      {/* ── Painel inferior ── */}
+      {/* Painel inferior */}
       <View style={styles.panel}>
         <View style={styles.buttonsRow}>
           <TouchableOpacity
@@ -282,7 +311,12 @@ export default function Home() {
               <Feather name="check-circle" size={24} color="#22C3A3" />
               <Text>Metas</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btncards}>
+
+            {/* ── NOVO: botão Rotas abre a lista de pontos ── */}
+            <TouchableOpacity
+              style={styles.btncards}
+              onPress={() => router.push("/rotasSugeridas")}
+            >
               <FontAwesome5 name="route" size={24} color="#22C3A3" />
               <Text>Rotas</Text>
             </TouchableOpacity>
