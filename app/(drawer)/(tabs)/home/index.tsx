@@ -263,7 +263,7 @@ export default function Home() {
           </TouchableOpacity>
 
           <Text style={{ fontWeight: '800', fontSize: 16, color: '#2C3F69', marginBottom: 4 }}>
-            🏃 {corridaSelecionada.nomeCorredor}
+             {corridaSelecionada.nomeCorredor}
           </Text>
           <Text style={{ color: '#666', fontSize: 12, marginBottom: 10 }}>
             📅 {formatDate(corridaSelecionada.criadoEm)}

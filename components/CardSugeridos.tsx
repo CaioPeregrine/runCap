@@ -7,7 +7,7 @@ type Props = { ponto: PontoTuristico };
 export default function CardSugeridos({ ponto }: Props) {
   function handleIniciar() {
     router.push({
-      pathname: "/mapaPonto",   // ← crie esta tela (passo 6)
+      pathname: "/correndoPontoT",   // ← crie esta tela (passo 6)
       params: {
         id:        ponto.id,
         nome:      ponto.nome,
