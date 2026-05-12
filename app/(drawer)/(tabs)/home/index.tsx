@@ -7,12 +7,11 @@ import { router } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Image, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import { Animated, ScrollView, Text, TouchableOpacity, View, Image } from "react-native";
 import MapView, { Marker, Polygon, Polyline } from "react-native-maps";
 import Ofensiva from "../../../../components/ofensiva/ofensiva";
 import { db } from "../../../../firebase/firebaseConfig";
 import styles from "./styles";
-import navegador from "../../../../assets/images/navegador.png";
 
 // ── NOVO: tipo do ponto turístico ──────────────────────────────────────────
 type PontoTuristico = {
@@ -75,6 +74,8 @@ export default function Home() {
   const mapRef = useRef<MapView>(null);
   const navigation = useNavigation();
   const currentUser = getAuth().currentUser;
+
+
 
   // ── Localização ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -206,14 +207,8 @@ export default function Home() {
               longitude: location.coords.longitude,
             }}
             anchor={{ x: 0.5, y: 0.5 }}
-            tracksViewChanges={false}
-          >
-            <Image
-              source={navegador}
-              style={{ width: 20, height: 20 }}
-              resizeMode="contain" />
-          </Marker>
-
+            image={require("../../../../assets/images/NavegadorDaTelaHome.png")}
+          />
           {/* Polylines e Polygons das corridas */}
           {corridas.map((corrida) => (
             <React.Fragment key={corrida.id}>
@@ -307,37 +302,37 @@ export default function Home() {
       )}
 
       {/* Painel inferior */}
-      
+
       <View style={styles.panel}>
         <ScrollView>
-        <View style={styles.buttonsRow}>
-          <TouchableOpacity
-            style={[styles.btn, styles.btnStart]}
-            onPress={() => router.push('../../../telaCorrendo')}
-          >
-            <Text style={styles.btnText}>▶  Iniciar Corrida</Text>
-          </TouchableOpacity>
-
-          <View style={styles.cards}>
-            <TouchableOpacity style={styles.btncards}>
-              <Octicons name="location" size={24} color="#22C3A3" />
-              <Text>Descobrir</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.btncards}>
-              <Feather name="check-circle" size={24} color="#22C3A3" />
-              <Text>Metas</Text>
-            </TouchableOpacity>
-
-            {/* ── NOVO: botão Rotas abre a lista de pontos ── */}
+          <View style={styles.buttonsRow}>
             <TouchableOpacity
-              style={styles.btncards}
-              onPress={() => router.push("/rotasSugeridas")}
+              style={[styles.btn, styles.btnStart]}
+              onPress={() => router.push('../../../telaCorrendo')}
             >
-              <FontAwesome5 name="route" size={24} color="#22C3A3" />
-              <Text>Rotas</Text>
+              <Text style={styles.btnText}>▶  Iniciar Corrida</Text>
             </TouchableOpacity>
+
+            <View style={styles.cards}>
+              <TouchableOpacity style={styles.btncards}>
+                <Octicons name="location" size={24} color="#22C3A3" />
+                <Text>Descobrir</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.btncards}>
+                <Feather name="check-circle" size={24} color="#22C3A3" />
+                <Text>Metas</Text>
+              </TouchableOpacity>
+
+              {/* ── NOVO: botão Rotas abre a lista de pontos ── */}
+              <TouchableOpacity
+                style={styles.btncards}
+                onPress={() => router.push("/rotasSugeridas")}
+              >
+                <FontAwesome5 name="route" size={24} color="#22C3A3" />
+                <Text>Rotas</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
         </ScrollView>
       </View>
     </View>

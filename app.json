@@ -4,7 +4,7 @@
     "slug": "runcap",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/RunCap.png",
     "scheme": "runcap",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -19,7 +19,7 @@
       "package": "com.runcap.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/RunCap.png",
         "backgroundColor": "#ffffff"
       },
       "config": {
@@ -31,7 +31,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/RunCap.png"
     },
     "plugins": [
       "expo-router"

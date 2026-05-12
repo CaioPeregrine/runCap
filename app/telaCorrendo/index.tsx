@@ -10,7 +10,7 @@ import {
     updateDoc,
 } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Text, TouchableOpacity, View, Image } from "react-native";
+import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { db } from "../../firebase/firebaseConfig";
 import styles from "./styles";
@@ -307,7 +307,7 @@ export default function Correndo() {
                         flat={true}
                     >
                         <Image
-                            source={require("../../assets/images/navegador.png")}
+                            source={require("../../assets/images/teste.png")}
                             style={{ width: 30, height: 30}}
                             resizeMode="contain" />
                     </Marker>
