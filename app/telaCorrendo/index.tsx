@@ -10,7 +10,7 @@ import {
     updateDoc,
 } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { db } from "../../firebase/firebaseConfig";
 import styles from "./styles";
@@ -85,26 +85,28 @@ export default function Correndo() {
     // ── Params recebidos do mapaPonto ────────────────────────────────────────
     const params = useLocalSearchParams();
 
-    // Ponto turístico de destino (opcional — só existe se vier do mapaPonto)
     const pontoDestino: Coord | null = params.pontoLat
         ? { latitude: parseFloat(params.pontoLat as string), longitude: parseFloat(params.pontoLng as string) }
         : null;
     const pontoNome = (params.pontoNome as string) ?? "";
 
-    // Rota pelas ruas calculada pelo mapaPonto (array de Coords serializado)
     const rotaGuia: Coord[] = params.rotaEncodada
         ? JSON.parse(params.rotaEncodada as string)
         : [];
 
     // ── Estados da corrida ───────────────────────────────────────────────────
     const [location, setLocation] = useState<any>(null);
+    const [filteredLocation, setFilteredLocation] = useState<any>(null);
     const [routeCoords, setRouteCoords] = useState<Coord[]>([]);
     const [status, setStatus] = useState<RunStatus>("running");
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [distanceMeters, setDistanceMeters] = useState(0);
     const [saving, setSaving] = useState(false);
-    const [heading, setHeading] = useState(0);
     const [distRestante, setDistRestante] = useState<number | null>(null);
+
+    // ── Heading suavizado tipo Uber ──────────────────────────────────────────
+    const [smoothHeading, setSmoothHeading] = useState(0);
+    const smoothHeadingRef = useRef(0);
 
     // IA
     const [iaMsg, setIaMsg] = useState<string>("");
@@ -157,11 +159,12 @@ export default function Correndo() {
             if (perm === "granted") {
                 const pos = await Location.getCurrentPositionAsync({});
                 setLocation(pos);
+                setFilteredLocation(pos);
             }
         })();
     }, []);
 
-    // Bússola
+    // ── Bússola com interpolação suave tipo Uber ─────────────────────────────
     useEffect(() => {
         let subscription: Location.LocationSubscription | null = null;
         (async () => {
@@ -169,11 +172,21 @@ export default function Correndo() {
                 const graus = headingData.trueHeading >= 0
                     ? headingData.trueHeading
                     : headingData.magHeading;
-                setHeading(graus);
-                mapRef.current?.animateCamera({ heading: graus, pitch: 70 });
+
+                // Pega o caminho mais curto entre os ângulos (ex: 350° → 10° = +20°, não -340°)
+                const diff = graus - smoothHeadingRef.current;
+                const shortestDiff = ((diff + 540) % 360) - 180;
+
+                // Interpola 15% da diferença por update — movimento fluido e gradual
+                const novoHeading = smoothHeadingRef.current + shortestDiff * 0.15;
+
+                smoothHeadingRef.current = novoHeading;
+                setSmoothHeading(novoHeading);
+
+                mapRef.current?.animateCamera({ heading: novoHeading, pitch: 60 });
             });
         })();
-        return () => { subscription?.remove(); };
+        return () => subscription?.remove();
     }, []);
 
     // Rastreamento GPS
@@ -182,7 +195,12 @@ export default function Correndo() {
             { accuracy: Location.Accuracy.Highest, timeInterval: 1000, distanceInterval: 1 },
             (response) => {
                 setLocation(response);
-                mapRef.current?.animateCamera({ center: response.coords, pitch: 70 });
+
+                if (!filteredLocation ||
+                    haversineDistance(response.coords, filteredLocation.coords) >= 2) {
+                    setFilteredLocation(response);
+                    mapRef.current?.animateCamera({ center: response.coords, pitch: 60 });
+                }
 
                 if (statusRef.current === "running") {
                     const newCoord: Coord = {
@@ -190,7 +208,6 @@ export default function Correndo() {
                         longitude: response.coords.longitude,
                     };
 
-                    // Atualiza distância restante até o ponto turístico
                     if (pontoDestino) {
                         setDistRestante(haversineDistance(newCoord, pontoDestino));
                     }
@@ -283,34 +300,30 @@ export default function Correndo() {
                 {status === "running" ? " Correndo…" : "⏸ Pausado"}
             </Text>
 
-            {location && (
+            {filteredLocation && (
                 <MapView
                     ref={mapRef}
                     style={styles.map}
                     rotateEnabled
                     pitchEnabled
                     initialRegion={{
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude,
+                        latitude: filteredLocation.coords.latitude,
+                        longitude: filteredLocation.coords.longitude,
                         latitudeDelta: 0.005,
                         longitudeDelta: 0.005,
                     }}
                 >
-                    {/* Marcador do usuário com bússola */}
+                    {/* Marcador do usuário com heading suavizado tipo Uber */}
                     <Marker
                         coordinate={{
-                            latitude: location.coords.latitude,
-                            longitude: location.coords.longitude,
+                            latitude: filteredLocation.coords.latitude,
+                            longitude: filteredLocation.coords.longitude,
                         }}
-                        rotation={heading}
                         anchor={{ x: 0.5, y: 0.5 }}
                         flat={true}
-                    >
-                        <Image
-                            source={require("../../assets/images/teste.png")}
-                            style={{ width: 30, height: 30}}
-                            resizeMode="contain" />
-                    </Marker>
+                        rotation={smoothHeading}
+                        image={require("../../assets/images/NavegadorDaTelaHome.png")}
+                    />
 
                     {/* Rastro do percurso já feito (azul) */}
                     {routeCoords.length > 1 && (
@@ -321,7 +334,7 @@ export default function Correndo() {
                         />
                     )}
 
-                    {/* ── NOVO: traçado guia pelas ruas até o destino (verde) ── */}
+                    {/* Traçado guia pelas ruas até o destino (verde) */}
                     {rotaGuia.length > 1 && (
                         <Polyline
                             coordinates={rotaGuia}
@@ -331,7 +344,7 @@ export default function Correndo() {
                         />
                     )}
 
-                    {/* ── NOVO: marcador do ponto turístico de destino ── */}
+                    {/* Marcador do ponto turístico de destino */}
                     {pontoDestino && (
                         <Marker
                             coordinate={pontoDestino}
@@ -339,7 +352,6 @@ export default function Correndo() {
                             pinColor="#22C3A3"
                         />
                     )}
-
                 </MapView>
             )}
 
@@ -393,7 +405,6 @@ export default function Correndo() {
                         <Text style={styles.btnText}>{saving ? "Salvando…" : "⏹  Finalizar"}</Text>
                     </TouchableOpacity>
                 </View>
-
             </View>
         </View>
     );

@@ -7,7 +7,7 @@ import { router } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, Text, TouchableOpacity, View, Image } from "react-native";
+import { Animated, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker, Polygon, Polyline } from "react-native-maps";
 import Ofensiva from "../../../../components/ofensiva/ofensiva";
 import { db } from "../../../../firebase/firebaseConfig";

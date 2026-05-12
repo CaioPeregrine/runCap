@@ -19,7 +19,7 @@ export default function CardSugeridos({ ponto }: Props) {
   }
 
   return (
-    <TouchableOpacity style={styles.card}>
+    <View style={styles.card}>
       {ponto.imageUrl ? (
         <Image source={{ uri: ponto.imageUrl }} style={styles.img} />
       ) : (
@@ -28,12 +28,10 @@ export default function CardSugeridos({ ponto }: Props) {
       <View style={styles.overlay}>
         <Text style={styles.title}>{ponto.nome}</Text>
       </View>
-      <View style={styles.botao}>
-        <TouchableOpacity onPress={handleIniciar}>
-          <Text style={styles.txt}>Iniciar Corrida</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+      <TouchableOpacity style={styles.botao} onPress={handleIniciar}>
+        <Text style={styles.txt}>Iniciar Corrida</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 const styles = StyleSheet.create({
@@ -44,6 +42,7 @@ const styles = StyleSheet.create({
         marginTop: 20,
         borderRadius: 20,
         alignItems: 'center',
+    
     },
     img: {
         backgroundColor: "#ffffff",
@@ -70,7 +69,7 @@ const styles = StyleSheet.create({
     },
     botao:{
         backgroundColor: "#22C3A3",
-        width: "90%",
+        width: "95%",
         height: 50,
         borderRadius: 20,
         alignItems: "center",
