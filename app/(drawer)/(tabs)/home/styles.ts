@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 28,
     paddingHorizontal: 20,
-    height:500, 
+    height:350, 
   },
   
   metricsRow: {

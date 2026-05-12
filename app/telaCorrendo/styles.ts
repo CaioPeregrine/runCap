@@ -13,11 +13,11 @@ const styles = StyleSheet.create({
   },
 
   panel: {
-    backgroundColor: "#F2F4F8",
-    paddingTop: 16,
-    paddingBottom: 28,
+    backgroundColor: "#51c48c19",
+    paddingTop: 5,
+    paddingBottom: 30,
     paddingHorizontal: 20,
-    height:500, 
+    height:170, 
   },
   
   metricsRow: {

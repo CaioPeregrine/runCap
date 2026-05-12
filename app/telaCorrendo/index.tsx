@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
-import * as Location from "expo-location";
-import { db } from "../../firebase/firebaseConfig";
-import {
-    collection, addDoc, serverTimestamp,
-    doc, getDoc, updateDoc,
-} from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { router, useLocalSearchParams } from "expo-router";
 import Feather from '@expo/vector-icons/Feather';
+import * as Location from "expo-location";
+import { router, useLocalSearchParams } from "expo-router";
+import { getAuth } from "firebase/auth";
+import {
+    addDoc,
+    collection,
+    doc, getDoc,
+    serverTimestamp,
+    updateDoc,
+} from "firebase/firestore";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Text, TouchableOpacity, View, Image } from "react-native";
+import MapView, { Marker, Polyline } from "react-native-maps";
+import { db } from "../../firebase/firebaseConfig";
 import styles from "./styles";
 
 const API_URL = "runcapapi-production.up.railway.app";
@@ -276,6 +279,10 @@ export default function Correndo() {
                 <Feather name="arrow-left" size={30} color="black" />
             </TouchableOpacity>
 
+            <Text style={[styles.statusText, { top: 50, right: 0, zIndex: 10, alignItems: "center", fontSize: 18, fontWeight: "600", color: "#000000" }]}>
+                {status === "running" ? " Correndo…" : "⏸ Pausado"}
+            </Text>
+
             {location && (
                 <MapView
                     ref={mapRef}
@@ -298,14 +305,19 @@ export default function Correndo() {
                         rotation={heading}
                         anchor={{ x: 0.5, y: 0.5 }}
                         flat={true}
-                    />
+                    >
+                        <Image
+                            source={require("../../assets/images/navegador.png")}
+                            style={{ width: 30, height: 30}}
+                            resizeMode="contain" />
+                    </Marker>
 
                     {/* Rastro do percurso já feito (azul) */}
                     {routeCoords.length > 1 && (
                         <Polyline
                             coordinates={routeCoords}
                             strokeColor="#1a58e9"
-                            strokeWidth={5}
+                            strokeWidth={15}
                         />
                     )}
 
@@ -314,7 +326,7 @@ export default function Correndo() {
                         <Polyline
                             coordinates={rotaGuia}
                             strokeColor="#22C3A3"
-                            strokeWidth={4}
+                            strokeWidth={12}
                             lineDashPattern={[12, 6]}
                         />
                     )}
@@ -327,6 +339,7 @@ export default function Correndo() {
                             pinColor="#22C3A3"
                         />
                     )}
+
                 </MapView>
             )}
 
@@ -381,7 +394,6 @@ export default function Correndo() {
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.statusText}>{status === "running" ? "🏃 Correndo…" : "⏸ Pausado"}</Text>
             </View>
         </View>
     );

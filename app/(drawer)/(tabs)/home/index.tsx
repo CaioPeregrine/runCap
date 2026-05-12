@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, Animated } from "react-native";
-import MapView, { Marker, Polyline, Polygon } from "react-native-maps";
-import * as Location from "expo-location";
-import { router } from "expo-router";
-import Octicons from '@expo/vector-icons/Octicons';
 import Feather from '@expo/vector-icons/Feather';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { useNavigation } from "@react-navigation/native";
-import { DrawerActions } from '@react-navigation/native';
-import { db } from "../../../../firebase/firebaseConfig";
-import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
+import Octicons from '@expo/vector-icons/Octicons';
+import { DrawerActions, useNavigation } from "@react-navigation/native";
+import * as Location from "expo-location";
+import { router } from "expo-router";
 import { getAuth } from "firebase/auth";
-import styles from "./styles";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Image, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import MapView, { Marker, Polygon, Polyline } from "react-native-maps";
 import Ofensiva from "../../../../components/ofensiva/ofensiva";
+import { db } from "../../../../firebase/firebaseConfig";
+import styles from "./styles";
+import navegador from "../../../../assets/images/navegador.png";
 
 // ── NOVO: tipo do ponto turístico ──────────────────────────────────────────
 type PontoTuristico = {
@@ -92,7 +92,12 @@ export default function Home() {
       { accuracy: Location.Accuracy.Highest, timeInterval: 1000, distanceInterval: 1 },
       (response) => {
         setLocation(response);
-        mapRef.current?.animateCamera({ pitch: 70, center: response.coords });
+        mapRef.current?.animateToRegion({
+          latitude: response.coords.latitude,
+          longitude: response.coords.longitude,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        }, 500);
       }
     );
   }, []);
@@ -195,10 +200,19 @@ export default function Home() {
           onPress={fecharCard}
         >
           {/* Marcador posição atual */}
-          <Marker coordinate={{
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          }} />
+          <Marker
+            coordinate={{
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            }}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
+          >
+            <Image
+              source={navegador}
+              style={{ width: 20, height: 20 }}
+              resizeMode="contain" />
+          </Marker>
 
           {/* Polylines e Polygons das corridas */}
           {corridas.map((corrida) => (
@@ -263,7 +277,7 @@ export default function Home() {
           </TouchableOpacity>
 
           <Text style={{ fontWeight: '800', fontSize: 16, color: '#2C3F69', marginBottom: 4 }}>
-             {corridaSelecionada.nomeCorredor}
+            {corridaSelecionada.nomeCorredor}
           </Text>
           <Text style={{ color: '#666', fontSize: 12, marginBottom: 10 }}>
             📅 {formatDate(corridaSelecionada.criadoEm)}
@@ -293,7 +307,9 @@ export default function Home() {
       )}
 
       {/* Painel inferior */}
+      
       <View style={styles.panel}>
+        <ScrollView>
         <View style={styles.buttonsRow}>
           <TouchableOpacity
             style={[styles.btn, styles.btnStart]}
@@ -322,6 +338,7 @@ export default function Home() {
             </TouchableOpacity>
           </View>
         </View>
+        </ScrollView>
       </View>
     </View>
   );
