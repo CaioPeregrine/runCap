@@ -306,12 +306,12 @@ export default function Home() {
       <View style={styles.panel}>
         <ScrollView>
           <View style={styles.buttonsRow}>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[styles.btn, styles.btnStart]}
               onPress={() => router.push('../../../telaCorrendo')}
             >
               <Text style={styles.btnText}>▶  Iniciar Corrida</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <View style={styles.cards}>
               <TouchableOpacity style={styles.btncards}>
