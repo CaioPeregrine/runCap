@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
-import * as Location from "expo-location";
-import { useLocalSearchParams, router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
+import * as Location from "expo-location";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import MapView, { Marker, Polyline } from "react-native-maps";
 import s from "./styles";
 
 // ─── COLOQUE SUA CHAVE AQUI ───────────────────────────────────────────────────
@@ -141,7 +141,15 @@ export default function MapaPonto() {
             </TouchableOpacity>
 
             <MapView ref={mapRef} style={{ flex: 1 }}>
-                {user && <Marker coordinate={user} pinColor="blue" title="Você" />}
+                {user && (
+                    <Marker
+                        coordinate={user}
+                        title="Você"
+                        image={require("../../assets/images/NavegadorDaTelaHome.png")}
+                        anchor={{ x: 0.5, y: 0.5 }}
+                        flat={true}
+                    />
+                )}
                 <Marker coordinate={destino} pinColor="#22C3A3" title={nome} />
                 {rota.length > 1 && (
                     <Polyline
@@ -162,7 +170,7 @@ export default function MapaPonto() {
                     <>
                         {distRua !== null && (
                             <View style={s.badge}>
-                                <Text style={s.badgeTxt}>{formatDist(distRua)} pela rua</Text>
+                                <Text style={s.badgeTxt}>{formatDist(distRua)} até ao {nome}</Text>
                             </View>
                         )}
 
@@ -173,12 +181,12 @@ export default function MapaPonto() {
                             <View style={s.metricas}>
                                 <View style={s.metrica}>
                                     <Text style={s.mVal}>{formatDist(distRua)}</Text>
-                                    <Text style={s.mLbl}>pela rua</Text>
+                                    <Text style={s.mLbl}>DISTÂNCIA</Text>
                                 </View>
                                 <View style={s.divisor} />
                                 <View style={s.metrica}>
                                     <Text style={s.mVal}>{tempoEstimado(distRua)}</Text>
-                                    <Text style={s.mLbl}>tempo estimado</Text>
+                                    <Text style={s.mLbl}>TEMPO ESTIMADO</Text>
                                 </View>
                             </View>
                         )}
