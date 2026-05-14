@@ -1,14 +1,13 @@
-import { auth } from '@/firebase/firebaseConfig';
-import { db } from '@/firebase/firebaseConfig';
+import { auth, db } from '@/firebase/firebaseConfig';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from "react-native";
 import styles from './styles';
 
 // ─── Gera um ID único no formato ID + 6 caracteres ────────────────────────────
@@ -51,6 +50,9 @@ export default function Cadastro() {
         amigos: [],
         totalKm: 0,
         criadoEm: serverTimestamp(),
+        conquistas: [],
+        areasFechardasTotal: 0,
+        pontosVisitadosTotal: [],
       });
 
       console.log("Usuário criado com sucesso:", user.uid);

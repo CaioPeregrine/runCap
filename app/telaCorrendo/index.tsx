@@ -14,8 +14,11 @@ import { Alert, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { db } from "../../firebase/firebaseConfig";
 import styles from "./styles";
+import { useConquistas } from "../hooks/useConquistas";
 
 const API_URL = "runcapapi-production.up.railway.app";
+
+const { verificarConquistas } = useConquistas();
 
 type Coord = { latitude: number; longitude: number };
 type RunStatus = "running" | "paused";
@@ -248,44 +251,52 @@ export default function Correndo() {
         }
     }
 
-    async function handleFinish() {
-        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-        setSaving(true);
-        try {
-            const uid = getAuth().currentUser?.uid;
-            if (!uid) { Alert.alert("Erro", "Usuário não autenticado."); return; }
+async function handleFinish() {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setSaving(true);
+    try {
+        const uid = getAuth().currentUser?.uid;
+        if (!uid) { Alert.alert("Erro", "Usuário não autenticado."); return; }
 
-            const pace = calcPace(distanceMeters, elapsedSeconds);
+        const pace = calcPace(distanceMeters, elapsedSeconds);
 
-            await addDoc(collection(db, "corridas"), {
-                uid,
-                distancia_m: distanceMeters,
-                distancia_km: parseFloat((distanceMeters / 1000).toFixed(3)),
-                duracao_min: Math.floor(elapsedSeconds / 60),
-                tempo_s: elapsedSeconds,
+        await addDoc(collection(db, "corridas"), {
+            uid,
+            distancia_m: distanceMeters,
+            distancia_km: parseFloat((distanceMeters / 1000).toFixed(3)),
+            duracao_min: Math.floor(elapsedSeconds / 60),
+            tempo_s: elapsedSeconds,
+            tempo_formatado: formatTime(elapsedSeconds),
+            pace,
+            rota: routeCoords,
+            criadoEm: serverTimestamp(),
+        });
+
+        await atualizarSequencia(uid);
+
+        // ✅ LINHA NOVA — verifica e desbloqueia conquistas
+        await verificarConquistas(uid, {
+            distancia_km: distanceMeters / 1000,
+            pace,
+            rotaFechada: false,    // deixe false por enquanto
+            pontosVisitados: [],   // deixe vazio por enquanto
+        });
+
+        router.replace({
+            pathname: "./corridaConcluida",
+            params: {
+                distancia_km: (distanceMeters / 1000).toFixed(2),
                 tempo_formatado: formatTime(elapsedSeconds),
                 pace,
-                rota: routeCoords,
-                criadoEm: serverTimestamp(),
-            });
-
-            await atualizarSequencia(uid);
-
-            router.replace({
-                pathname: "./corridaConcluida",
-                params: {
-                    distancia_km: (distanceMeters / 1000).toFixed(2),
-                    tempo_formatado: formatTime(elapsedSeconds),
-                    pace,
-                    rota: JSON.stringify(routeCoords),
-                },
-            });
-        } catch (e) {
-            Alert.alert("Erro ao salvar", String(e));
-        } finally {
-            setSaving(false);
-        }
+                rota: JSON.stringify(routeCoords),
+            },
+        });
+    } catch (e) {
+        Alert.alert("Erro ao salvar", String(e));
+    } finally {
+        setSaving(false);
     }
+}
 
     return (
         <View style={styles.container}>
