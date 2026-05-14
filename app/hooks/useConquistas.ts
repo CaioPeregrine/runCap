@@ -1,14 +1,9 @@
-// hooks/useConquistas.ts  ← crie na pasta hooks/
+// hooks/useConquistas.ts
 import { useCallback } from "react";
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig"; // ajuste se necessário
 
-function parsePace(pace: string): number {
-  const match = pace.match(/(\d+):(\d+)/);
-  if (!match) return 99;
-  return parseInt(match[1]) + parseInt(match[2]) / 60;
-}
-
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 export type DadosCorrida = {
   distancia_km: number;
   pace: string;
@@ -16,13 +11,19 @@ export type DadosCorrida = {
   pontosVisitados?: string[];
 };
 
-// Garante campos que usuários antigos podem não ter
+// ─── Funções auxiliares (fora do hook, sem hooks do React) ───────────────────
+
+function parsePace(pace: string): number {
+  const match = pace.match(/(\d+):(\d+)/);
+  if (!match) return 99;
+  return parseInt(match[1]) + parseInt(match[2]) / 60;
+}
+
 async function garantirCampos(uid: string, uData: Record<string, any>) {
   const faltando: Record<string, any> = {};
-  if (!Array.isArray(uData.conquistas))             faltando.conquistas = [];
-  if (typeof uData.areasFechardasTotal !== "number") faltando.areasFechardasTotal = 0;
-  if (!Array.isArray(uData.pontosVisitadosTotal))    faltando.pontosVisitadosTotal = [];
-  // totalKm já existe no seu Firestore — não precisa criar
+  if (!Array.isArray(uData.conquistas))              faltando.conquistas = [];
+  if (typeof uData.areasFechardasTotal !== "number")  faltando.areasFechardasTotal = 0;
+  if (!Array.isArray(uData.pontosVisitadosTotal))     faltando.pontosVisitadosTotal = [];
 
   if (Object.keys(faltando).length > 0) {
     await updateDoc(doc(db, "usuarios", uid), faltando);
@@ -32,7 +33,7 @@ async function garantirCampos(uid: string, uData: Record<string, any>) {
 
 function calcularNovas(
   corrida: DadosCorrida,
-  totalKm: number,           // campo que já existe no seu Firestore
+  totalKm: number,
   sequenciaAtual: number,
   areasFechardasTotal: number,
   pontosVisitadosTotal: string[],
@@ -48,7 +49,7 @@ function calcularNovas(
   // Distância por corrida
   if (corrida.distancia_km >= 1) { tentar("primeiro_km"); tentar("primeira_corrida"); }
 
-  // Distância acumulada (usa totalKm que já existe)
+  // Distância acumulada
   if (totalComEsta >= 5)   tentar("cinco_km");
   if (totalComEsta >= 10)  tentar("dez_km");
   if (totalComEsta >= 21)  tentar("meia_maratona");
@@ -95,7 +96,39 @@ function calcularNovas(
   return novas;
 }
 
+// ─── Hook principal ───────────────────────────────────────────────────────────
 export function useConquistas() {
+
+  // Migra km antigos para usuários que já tinham conta antes do sistema de conquistas
+  const migrarKmAntigos = useCallback(async (uid: string) => {
+    try {
+      const uRef  = doc(db, "usuarios", uid);
+      const uSnap = await getDoc(uRef);
+      if (!uSnap.exists()) return;
+      const uData = uSnap.data();
+
+      // Flag: se já migrou, não roda de novo
+      if (uData.migracaoKm) return;
+
+      // Soma todas as corridas antigas do usuário
+      const snap = await getDocs(
+        query(collection(db, "corridas"), where("uid", "==", uid))
+      );
+      let totalReal = 0;
+      snap.forEach((d) => { totalReal += d.data().distancia_km ?? 0; });
+
+      await updateDoc(uRef, {
+        totalKm: totalReal,
+        migracaoKm: true,
+      });
+
+      console.log(`Migração concluída: totalKm = ${totalReal} km`);
+    } catch (e) {
+      console.error("Erro na migração:", e);
+    }
+  }, []);
+
+  // Verifica e desbloqueia conquistas após cada corrida
   const verificarConquistas = useCallback(async (
     uid: string,
     corrida: DadosCorrida
@@ -108,19 +141,17 @@ export function useConquistas() {
       const uData = uSnap.data() as Record<string, any>;
       await garantirCampos(uid, uData);
 
-      const desbloqueadas   = new Set<string>(uData.conquistas ?? []);
-      const totalKm         = (uData.totalKm as number) ?? 0;        // ← seu campo existente
-      const sequencia       = (uData.sequenciaAtual as number) ?? 0;
-      const areasTotal      = (uData.areasFechardasTotal as number) ?? 0;
-      const pontosTotal     = (uData.pontosVisitadosTotal as string[]) ?? [];
+      const desbloqueadas = new Set<string>(uData.conquistas ?? []);
+      const totalKm       = (uData.totalKm as number) ?? 0;
+      const sequencia     = (uData.sequenciaAtual as number) ?? 0;
+      const areasTotal    = (uData.areasFechardasTotal as number) ?? 0;
+      const pontosTotal   = (uData.pontosVisitadosTotal as string[]) ?? [];
 
       const novas = calcularNovas(
         corrida, totalKm, sequencia, areasTotal, pontosTotal, desbloqueadas
       );
 
-      // Monta o update
       const updateData: Record<string, any> = {
-        // Atualiza totalKm somando a corrida atual
         totalKm: totalKm + corrida.distancia_km,
       };
       if (novas.length > 0) {
@@ -145,5 +176,6 @@ export function useConquistas() {
     }
   }, []);
 
-  return { verificarConquistas };
+  // ✅ return dentro do hook, exportando as duas funções
+  return { verificarConquistas, migrarKmAntigos };
 }

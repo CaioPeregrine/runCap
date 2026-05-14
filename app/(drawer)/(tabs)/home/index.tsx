@@ -12,6 +12,7 @@ import MapView, { Marker, Polygon, Polyline } from "react-native-maps";
 import Ofensiva from "../../../../components/ofensiva/ofensiva";
 import { db } from "../../../../firebase/firebaseConfig";
 import styles from "./styles";
+import { useConquistas } from "../../../hooks/useConquistas";
 
 // ── NOVO: tipo do ponto turístico ──────────────────────────────────────────
 type PontoTuristico = {
@@ -76,7 +77,12 @@ export default function Home() {
   const currentUser = getAuth().currentUser;
 
 
+const { migrarKmAntigos } = useConquistas();
 
+useEffect(() => {
+  const uid = getAuth().currentUser?.uid;
+  if (uid) migrarKmAntigos(uid);
+}, []);
   // ── Localização ────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
