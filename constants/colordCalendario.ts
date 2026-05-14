@@ -1,0 +1,20 @@
+export const COLORS = {
+  greenDark:   '#27500A',
+  greenMid:    '#3B6D11',
+  greenLight:  '#C0DD97',
+  greenBg:     '#EAF3DE',
+  greenDot:    '#97C459',
+  greenBorder: '#639922',
+
+  background:   '#f5f5f0',
+  white:        '#ffffff',
+  textPrimary:  '#111111',
+  textMuted:    '#888888',
+  textHint:     '#aaaaaa',
+  border:       'rgba(0,0,0,0.1)',
+  borderLight:  'rgba(0,0,0,0.08)',
+  borderMid:    'rgba(0,0,0,0.2)',
+  todayBg:      '#f0f0ea',
+  selectedBg:   '#dbeafe',
+  selectedText: '#1e40af',
+};

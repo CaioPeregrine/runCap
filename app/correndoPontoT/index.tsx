@@ -170,7 +170,9 @@ export default function MapaPonto() {
                     <>
                         {distRua !== null && (
                             <View style={s.badge}>
-                                <Text style={s.badgeTxt}>{formatDist(distRua)} até ao {nome}</Text>
+                                <Text style={s.badgeTxt}>{formatDist(distRua)} até ao {nome}
+                                    
+                                </Text>
                             </View>
                         )}
 
