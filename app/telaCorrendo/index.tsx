@@ -307,8 +307,8 @@ async function handleFinish() {
                 <Feather name="arrow-left" size={30} color="black" />
             </TouchableOpacity>
 
-            <Text style={[styles.statusText, { top: 50, right: 0, zIndex: 10, alignItems: "center", fontSize: 18, fontWeight: "600", color: "#000000" }]}>
-                {status === "running" ? " Correndo…" : "⏸ Pausado"}
+            <Text style={[styles.statusText, { top: 40, right: 0, zIndex: 10, alignItems: "center", fontSize: 18, fontWeight: "600", color: "#000000" }]}>
+                {status === "running" ? " Correndo…" : " Pausado"}
             </Text>
 
             {filteredLocation && (
@@ -389,6 +389,7 @@ async function handleFinish() {
                     }}>
                         <Text style={{ color: "#fff", fontSize: 13, fontStyle: "italic" }}>
                             {iaLoading ? "🤖 Gerando mensagem..." : `🤖 ${iaMsg}`}
+                            console.log("IA:", iaMsg);
                         </Text>
                     </View>
                 )}
@@ -410,10 +411,10 @@ async function handleFinish() {
 
                 <View style={styles.buttonsRow}>
                     <TouchableOpacity style={[styles.btn, styles.btnPause]} onPress={handlePauseResume}>
-                        <Text style={styles.btnText}>{status === "running" ? "⏸  Pausar" : "▶  Retomar"}</Text>
+                        <Text style={styles.btnText}>{status === "running" ? "  Pausar" : "  Retomar"}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.btn, styles.btnFinish]} onPress={handleFinish} disabled={saving}>
-                        <Text style={styles.btnText}>{saving ? "Salvando…" : "⏹  Finalizar"}</Text>
+                        <Text style={styles.btnText}>{saving ? "Salvando…" : "  Finalizar"}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
