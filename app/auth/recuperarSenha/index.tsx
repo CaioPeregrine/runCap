@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, Alert, StyleSheet } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+import React, { useState } from 'react';
+import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import styles from './styles';
-
+import { router } from 'expo-router';
 
 export default function RecuperarSenha() {
   const [email, setEmail] = useState('');
@@ -18,13 +19,12 @@ export default function RecuperarSenha() {
     sendPasswordResetEmail(auth, email)
       .then(() => {
         Alert.alert(
-          "Sucesso", 
+          "Sucesso",
           "Enviamos um link de redefinição para o seu e-mail. Verifique também a caixa de spam."
         );
       })
       .catch((error) => {
         const errorCode = error.code;
-        // Tratamento de erros comuns
         if (errorCode === 'auth/user-not-found') {
           Alert.alert("Erro", "Usuário não encontrado.");
         } else if (errorCode === 'auth/invalid-email') {
@@ -37,36 +37,45 @@ export default function RecuperarSenha() {
 
   return (
     <View style={styles.background}>
-    <View style={styles.segundaCamada}>
-      <Text style={{ fontSize: 18, marginBottom: 10 }}>Recuperar Senha</Text>
       
-      <TextInput
-        placeholder="Digite seu e-mail de cadastro"
-        value={email}
-        onChangeText={setEmail}
-        style={{
-          borderWidth: 1,
-          borderColor: '#ccc',
-          padding: 10,
-          borderRadius: 8,
-          marginBottom: 20
-        }}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+      {/* Ícone de e-mail verde no topo */}
+      <View style={styles.containerIconeTopo}>
+        <MaterialCommunityIcons name="email-outline" size={32} color="#FFFFFF" />
+      </View>
 
-      <TouchableOpacity 
-        onPress={handleReset}
-        style={{
-          backgroundColor: '#ff4444', // Já usando o vermelho que você quer
-          padding: 15,
-          borderRadius: 8,
-          alignItems: 'center'
-        }}
-      >
-        <Text style={{ color: '#fff', fontWeight: 'bold' }}>ENVIAR E-MAIL</Text>
+      {/* Cabeçalho de texto */}
+      <Text style={styles.tituloTela}>Recuperar minha senha!</Text>
+      <Text style={styles.subtituloTela}>Iremos enviar um link para redefinir sua senha</Text>
+
+      {/* Card branco centralizado */}
+      <View style={styles.segundaCamada}>
+        <View style={styles.campoContainer}>
+          <Text style={styles.labelInput}>Email</Text>
+          
+          <View style={styles.inputWrapper}>
+            <MaterialCommunityIcons name="email-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+            <TextInput
+              placeholder="seu@email.com"
+              placeholderTextColor="#9CA3AF"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.textInput}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+
+        <TouchableOpacity onPress={handleReset} style={styles.botao}>
+          <Text style={styles.textoBotao}>Redefinir minha senha</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Link inferior para retornar */}
+      <TouchableOpacity style={styles.botaoVoltar} onPress={()=> router.push('./login')}>
+        <Text style={styles.textoBotaoVoltar}>← Voltar para o login</Text>
       </TouchableOpacity>
-    </View>
+
     </View>
   );
 }

@@ -1,87 +1,106 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet } from 'react-native';
 
-
-const styles = StyleSheet.create({
-  label: { fontSize: 22, fontWeight: "400" },
-  textInputInner: { fontSize: 18, color: "#000000", flex: 1 },
-  viewGoogleContainer: { alignItems: 'center', marginTop: 60 },
-  headerContainer: {
-    width: '100%',
-    height: 200,
-    position: 'absolute',
-    top: 0,
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  circle: {
-    width: "100%",
-    height: 230,
-    borderBottomLeftRadius: 150,
-    backgroundColor: '#2c3f69',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontFamily: 'alfa slab one',
-    fontSize: 48,
-    marginTop: 40,
-  },
+export default StyleSheet.create({
   background: {
     flex: 1,
-    backgroundColor: "#F2F4F8",
-    alignItems: "center",
-    justifyContent: "center"
+    backgroundColor: '#1B2B48', // Azul escuro do fundo
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  circle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // O "Card" branco da imagem
   BK2: {
-    width: "80%",
-    marginTop: 100,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    padding: 25,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
   },
+  label: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1B2B48',
+    marginBottom: 5,
+  },
+  subLabel: {
+    fontSize: 14,
+    color: '#A0A0A0',
+    marginBottom: 20,
+  },
+  // Inputs com bordas arredondadas e cinza claro
   input: {
-    alignItems: "center",
-    borderColor: "#000000",
-    borderRadius: 15,
-    paddingHorizontal: 8,
-    borderWidth: 0.5,
-    marginBottom: 10,
     flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#E1E8EF',
+    paddingHorizontal: 15,
+    height: 55,
+    marginBottom: 15,
+  },
+  textInputInner: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
   },
   TextEsqueci: {
-    fontSize: 13,
-    color: "#22C3A3",
+    color: '#24B28D', // Verde água da imagem
+    fontWeight: '600',
+    marginBottom: 20,
   },
   botao: {
-    backgroundColor: "#22C3A3",
-    borderRadius: 18,
-    padding: 10,
-    marginTop: 25,
-    alignItems: "center",
+    backgroundColor: '#24B28D',
+    borderRadius: 15,
     height: 55,
     justifyContent: 'center',
-    elevation: 5,
-    shadowOpacity: 0.8,
-    shadowColor: "#000",
+    alignItems: 'center',
+    marginTop: 10,
   },
   textoBotao: {
-    fontWeight: "bold",
-    fontSize: 24,
-    color: "#ffff",
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  viewGoogleContainer: {
+    alignItems: 'center',
+    marginTop: 25,
   },
   estiloGoogle: {
-    fontWeight: "bold",
-    fontSize: 15,
-    color: "#000000",
+    color: '#FFFFFF',
+    marginBottom: 10,
   },
-  cadastre: {
-    fontSize: 20,
-    color: "#22C3A3",
-    fontWeight: "bold",
-    marginLeft: 5,
+  // Botão do Google branco
+  googleButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    width: '100%',
+    height: 55,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E1E8EF',
   },
   viewCadastre: {
-    position: 'absolute',
-    bottom: 90,
-    flexDirection: "column",
-    alignItems: 'center',
-  }
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
+    gap: 5,
+  },
+  cadastre: {
+    color: '#24B28D',
+    fontWeight: '700',
+  },
 });
-export default styles;

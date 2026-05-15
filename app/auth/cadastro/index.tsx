@@ -9,6 +9,8 @@ import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useState } from 'react';
 import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from "react-native";
 import styles from './styles';
+import Fontisto from '@expo/vector-icons/Fontisto';
+
 
 // ─── Gera um ID único no formato ID + 6 caracteres ────────────────────────────
 function gerarCodigoId(): string {
@@ -21,6 +23,8 @@ export default function Cadastro() {
   const [nome, setNome] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verSenha, setVerSenha] = useState<boolean>(true);
+  
 
   async function handleRegistro() {
     setError("");
@@ -76,49 +80,63 @@ export default function Cadastro() {
 
   return (
     <View style={styles.background}>
+      
+      <View style={styles.ViewSuperior}>
+        <TouchableOpacity onPress={() => router.push('./login')}>
+          <AntDesign name="arrow-left" size={24} color="#111827" />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.tituloTela}>Crie sua Conta!</Text>
+      <Text style={styles.subtituloTela}>Registre-se no RunCap!</Text>
+
       <View style={styles.segundaCamada}>
-
-        <View style={styles.ViewSuperior}>
-          <TouchableOpacity onPress={() => router.push('./login')}>
-            <AntDesign name="arrow-left" size={24} color="black" />
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.TerceiraCamada}>
-          <View style={styles.Input}>
-            <Feather name="user" size={20} color="black" style={{ marginRight: 5 }} />
-            <TextInput
-              maxLength={20}
-              placeholderTextColor="#000000"
-              placeholder="Nome do usuário"
-              value={nome}
-              onChangeText={setNome}
-            />
-          </View>
+          
 
-          <View style={styles.Input}>
-            <MaterialCommunityIcons name="email-outline" size={20} color="black" style={{ marginRight: 5 }} />
-            <TextInput
-              maxLength={100}
-              placeholderTextColor="#000000"
-              placeholder="Email"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
+            <View style={styles.input}>
+              <Feather name="user" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.textInput}
+                maxLength={20}
+                placeholderTextColor="#9CA3AF"
+                placeholder="Insira seu nome"
+                value={nome}
+                onChangeText={setNome}
+              />
+            </View>
+        
 
-          <View style={styles.Input}>
-            <Ionicons name="lock-closed-outline" size={20} color="black" style={{ marginRight: 5 }} />
-            <TextInput
-              placeholderTextColor="#000000"
-              placeholder="Senha"
-              autoCapitalize="none"
-              secureTextEntry
-              value={senha}
-              onChangeText={setSenha}
-            />
+          <View style={styles.input}>
+                   <Fontisto name="email" size={20} color="#c1c1c1" style={{ marginRight: 10 }} />
+                   <TextInput
+                     style={styles.textInputInner}
+                     placeholderTextColor="#c1c1c1"
+                     placeholder="E-mail"
+                     autoCapitalize='none'
+                     value={email}
+                     onChangeText={setEmail}
+                   />
+                 </View>
+                 <View style={styles.input}>
+                   <Ionicons name="lock-closed" size={20} color="#c1c1c1" style={{ marginRight: 10 }} />
+                   <TextInput
+                     style={styles.textInputInner}
+                     placeholderTextColor="#c1c1c1"
+                     placeholder="Senha"
+                     autoCapitalize='none'
+                     value={senha}
+                      secureTextEntry={verSenha}
+                     onChangeText={setSenha}
+                   />
+                   <TouchableOpacity onPress={() => setVerSenha(!verSenha)}>
+                       <Ionicons
+                         name={verSenha ? "eye-off" : "eye"}
+                         size={22}
+                         color="#24B28D"
+                       />
+                     </TouchableOpacity>
+            
           </View>
 
           {error ? <Text style={styles.erroText}>{error}</Text> : null}
@@ -128,11 +146,18 @@ export default function Cadastro() {
           {loading ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text style={styles.textoBotao}>cadastrar</Text>
+            <Text style={styles.textoBotao}>Criar minha conta</Text>
           )}
         </TouchableOpacity>
-
       </View>
+
+      <View style={styles.rodapeContainer}>
+        <Text style={styles.textoRodape}>Já tem uma conta? </Text>
+        <TouchableOpacity onPress={() => router.push('./login')}>
+          <Text style={styles.linkRodape}>Entrar</Text>
+        </TouchableOpacity>
+      </View>
+
     </View>
   );
 }

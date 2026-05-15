@@ -37,6 +37,7 @@ export default function Login() {
   const [email, setEmail] = useState<string>('');
   const [senha, setSenha] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [verSenha, setVerSenha] = useState<boolean>(true);
 
   const handleLogin = async () => {
     if (email === '' || senha === '') {
@@ -85,83 +86,87 @@ export default function Login() {
       setLoading(false);
     }
   };
-
   return (
-
     <View style={styles.background}>
       <View style={styles.headerContainer}>
-        <View style={styles.circle}>
-          <Image 
-  source={require('../../../assets/images/RunCap.png')} 
-  style={{ width: 240, height: 200 }} 
-/>
-          
-        </View>
+        {/* Logo centralizada como na imagem */}
+        <Image
+          source={require('../../../assets/images/logo.png')}
+          style={{ width: 300, height: 300, resizeMode: 'contain', marginTop: -50 }}
+        />
       </View>
 
       <View style={styles.BK2}>
-        <Text style={styles.label}>E-mail</Text>
+        <Text style={styles.label}>Bem-vindo ao RunCap!</Text>
+        <Text style={styles.subLabel}>Entre na sua conta para continuar</Text>
+
         <View style={styles.input}>
           <Fontisto name="email" size={20} color="#c1c1c1" style={{ marginRight: 10 }} />
           <TextInput
-            maxLength={100}
             style={styles.textInputInner}
             placeholderTextColor="#c1c1c1"
-            placeholder="digite seu e-mail"
+            placeholder="E-mail"
             autoCapitalize='none'
-            keyboardType='email-address'
             value={email}
             onChangeText={setEmail}
           />
         </View>
-
-        <Text style={styles.label}>Senha</Text>
         <View style={styles.input}>
           <Ionicons name="lock-closed" size={20} color="#c1c1c1" style={{ marginRight: 10 }} />
           <TextInput
-            maxLength={100}
             style={styles.textInputInner}
             placeholderTextColor="#c1c1c1"
-            placeholder="digite sua senha"
+            placeholder="Senha"
             autoCapitalize='none'
-            secureTextEntry
             value={senha}
+             secureTextEntry={verSenha}
             onChangeText={setSenha}
           />
+          <TouchableOpacity onPress={() => setVerSenha(!verSenha)}>
+              <Ionicons
+                name={verSenha ? "eye-off" : "eye"}
+                size={22}
+                color="#24B28D"
+              />
+            </TouchableOpacity>
+          
+      
         </View>
 
-        <View style={{ alignItems: "flex-end" }}>
-          <TouchableOpacity onPress={() => router.push("/auth/recuperarSenha")}>
-            <Text style={styles.TextEsqueci}>esqueceu a senha?</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={{ alignItems: "flex-end" }}
+          onPress={() => router.push("/auth/recuperarSenha")}
+        >
+          <Text style={styles.TextEsqueci}>Esqueceu a senha?</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.botao}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.textoBotao}>Entrar</Text>
+          )}
+        </TouchableOpacity>
+
+        <View style={{ alignItems: 'center', marginVertical: 15 }}>
+          <Text style={{ color: '#A0A0A0' }}>ou</Text>
         </View>
 
-        <View>
-          <TouchableOpacity
-            style={styles.botao}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#2C3F69" />
-            ) : (
-              <Text style={styles.textoBotao}>acessar</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.viewGoogleContainer}>
-        <Text style={styles.estiloGoogle}>ou entre com </Text>
-        <TouchableOpacity style={{ marginTop: 10 }}>
-          <Ionicons name="logo-google" size={30} color="black" />
+        {/* Botão Google estilizado */}
+        <TouchableOpacity style={styles.googleButton}>
+          <Ionicons name="logo-google" size={20} color="#34ff01" style={{ marginRight: 10 }} />
+          <Text style={{ color: '#1B2B48', fontWeight: '600' }}>Continuar com Google</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.viewCadastre}>
-        <Text style={{ color: '#000000' }}>não tem uma conta?</Text>
+        <Text style={{ color: '#FFFFFF' }}>Não tem uma conta?</Text>
         <TouchableOpacity onPress={() => router.push("/auth/cadastro")}>
-          <Text style={styles.cadastre}>cadastre-se</Text>
+          <Text style={styles.cadastre}>Cadastre-se</Text>
         </TouchableOpacity>
       </View>
     </View>
