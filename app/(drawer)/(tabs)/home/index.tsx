@@ -11,8 +11,8 @@ import { Animated, ScrollView, Text, TouchableOpacity, View } from "react-native
 import MapView, { Marker, Polygon, Polyline } from "react-native-maps";
 import Ofensiva from "../../../../components/ofensiva/ofensiva";
 import { db } from "../../../../firebase/firebaseConfig";
-import styles from "./styles";
 import { useConquistas } from "../../../hooks/useConquistas";
+import styles from "./styles";
 
 // ── NOVO: tipo do ponto turístico ──────────────────────────────────────────
 type PontoTuristico = {
@@ -240,15 +240,17 @@ useEffect(() => {
           ))}
 
           {/* ── NOVO: marcadores dos pontos turísticos ── */}
-          {pontos.map((ponto) => (
-            <Marker
-              key={ponto.id}
-              coordinate={{ latitude: ponto.latitude, longitude: ponto.longitude }}
-              title={ponto.nome}
-              description={ponto.descricao}
-              pinColor="#22C3A3"
-            />
-          ))}
+          {pontos
+            .filter((ponto) => Number.isFinite(ponto.latitude) && Number.isFinite(ponto.longitude))
+            .map((ponto) => (
+              <Marker
+                key={ponto.id}
+                coordinate={{ latitude: ponto.latitude, longitude: ponto.longitude }}
+                title={ponto.nome}
+                description={ponto.descricao}
+                pinColor="#22C3A3"
+              />
+            ))}
         </MapView>
       )}
 

@@ -81,7 +81,11 @@ export default function MapaPonto() {
         nome: string; descricao: string; latitude: string; longitude: string;
     }>();
 
-    const destino: Coord = { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
+    const latDestino = latitude ? parseFloat(latitude) : Number.NaN;
+    const lngDestino = longitude ? parseFloat(longitude) : Number.NaN;
+    const destino: Coord | null = Number.isFinite(latDestino) && Number.isFinite(lngDestino)
+        ? { latitude: latDestino, longitude: lngDestino }
+        : null;
 
     const [user, setUser] = useState<Coord | null>(null);
     const [rota, setRota] = useState<Coord[]>([]);
@@ -98,6 +102,12 @@ export default function MapaPonto() {
             const coord: Coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
             setUser(coord);
 
+            if (!destino) {
+                console.warn("Destino inválido: latitude ou longitude ausentes");
+                setCarregando(false);
+                return;
+            }
+
             try {
                 const { pontos, distanciaMetros } = await buscarRota(coord, destino);
                 setRota(pontos);
@@ -110,27 +120,30 @@ export default function MapaPonto() {
                 setCarregando(false);
             }
 
-            // Centraliza para mostrar rota inteira
-            setTimeout(() => {
-                mapRef.current?.fitToCoordinates([coord, destino], {
-                    edgePadding: { top: 80, right: 60, bottom: 260, left: 60 },
-                    animated: true,
-                });
-            }, 400);
+            if (destino) {
+                // Centraliza para mostrar rota inteira
+                setTimeout(() => {
+                    mapRef.current?.fitToCoordinates([coord, destino], {
+                        edgePadding: { top: 80, right: 60, bottom: 260, left: 60 },
+                        animated: true,
+                    });
+                }, 400);
 
-            // Atualiza posição e rota a cada 50m
-            Location.watchPositionAsync(
-                { accuracy: Location.Accuracy.High, distanceInterval: 50 },
-                async (r) => {
-                    const c: Coord = { latitude: r.coords.latitude, longitude: r.coords.longitude };
-                    setUser(c);
-                    try {
-                        const { pontos, distanciaMetros } = await buscarRota(c, destino);
-                        setRota(pontos);
-                        setDistRua(distanciaMetros);
-                    } catch (_) { }
-                }
-            );
+                // Atualiza posição e rota a cada 50m
+                Location.watchPositionAsync(
+                    { accuracy: Location.Accuracy.High, distanceInterval: 50 },
+                    async (r) => {
+                        const c: Coord = { latitude: r.coords.latitude, longitude: r.coords.longitude };
+                        setUser(c);
+                        try {
+                            const { pontos, distanciaMetros } = await buscarRota(c, destino);
+                            setRota(pontos);
+                            setDistRua(distanciaMetros);
+                        } catch (_) { }
+                    }
+                );
+            }
+
         })();
     }, []);
 
@@ -150,7 +163,7 @@ export default function MapaPonto() {
                         flat={true}
                     />
                 )}
-                <Marker coordinate={destino} pinColor="#22C3A3" title={nome} />
+                {destino && <Marker coordinate={destino} pinColor="#22C3A3" title={nome} />}
                 {rota.length > 1 && (
                     <Polyline
                         coordinates={rota}
@@ -194,23 +207,29 @@ export default function MapaPonto() {
                         )}
 
                         <TouchableOpacity
-                            style={s.botao}
-                            onPress={() =>
+                            style={[s.botao, !destino && { opacity: 0.5 }]}
+                            onPress={() => {
+                                if (!destino) return;
                                 router.push({
                                     pathname: "/telaCorrendo",
                                     params: {
                                         pontoLat: destino.latitude.toString(),
                                         pontoLng: destino.longitude.toString(),
                                         pontoNome: nome,
-                                        // Passa a rota encodada para a tela correndo desenhar
                                         rotaEncodada: JSON.stringify(rota),
                                     },
-                                } as any)
-                            }
+                                } as any);
+                            }}
+                            disabled={!destino}
                         >
                             <Feather name="play" size={18} color="#fff" />
                             <Text style={s.botaoTxt}>Correr até aqui</Text>
                         </TouchableOpacity>
+                        {!destino && (
+                            <Text style={{ color: "#ff4d4f", textAlign: "center", marginTop: 10 }}>
+                                Coordenadas do destino inválidas. Tente selecionar outra rota.
+                            </Text>
+                        )}
                     </>
                 )}
             </View>

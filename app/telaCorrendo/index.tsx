@@ -13,8 +13,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { db } from "../../firebase/firebaseConfig";
-import styles from "./styles";
 import { useConquistas } from "../hooks/useConquistas";
+import styles from "./styles";
 
 const API_URL = "runcapapi-production.up.railway.app";
 
@@ -88,14 +88,19 @@ export default function Correndo() {
     // ── Params recebidos do mapaPonto ────────────────────────────────────────
     const params = useLocalSearchParams();
 
-    const pontoDestino: Coord | null = params.pontoLat
-        ? { latitude: parseFloat(params.pontoLat as string), longitude: parseFloat(params.pontoLng as string) }
+    const parsedPontoLat = params.pontoLat ? parseFloat(params.pontoLat as string) : Number.NaN;
+    const parsedPontoLng = params.pontoLng ? parseFloat(params.pontoLng as string) : Number.NaN;
+    const pontoDestino: Coord | null = Number.isFinite(parsedPontoLat) && Number.isFinite(parsedPontoLng)
+        ? { latitude: parsedPontoLat, longitude: parsedPontoLng }
         : null;
     const pontoNome = (params.pontoNome as string) ?? "";
 
     const rotaGuia: Coord[] = params.rotaEncodada
         ? JSON.parse(params.rotaEncodada as string)
         : [];
+    const rotaGuiaValid = rotaGuia.filter(
+        (c): c is Coord => c != null && Number.isFinite(c.latitude) && Number.isFinite(c.longitude)
+    );
 
     // ── Estados da corrida ───────────────────────────────────────────────────
     const [location, setLocation] = useState<any>(null);
@@ -346,9 +351,9 @@ async function handleFinish() {
                     )}
 
                     {/* Traçado guia pelas ruas até o destino (verde) */}
-                    {rotaGuia.length > 1 && (
+                    {rotaGuiaValid.length > 1 && (
                         <Polyline
-                            coordinates={rotaGuia}
+                            coordinates={rotaGuiaValid}
                             strokeColor="#22C3A3"
                             strokeWidth={12}
                             lineDashPattern={[12, 6]}

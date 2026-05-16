@@ -1,10 +1,13 @@
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Share, Animated, Dimensions, Linking,
+    Animated, Dimensions, Linking,
+    ScrollView, Share,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
-import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { router, useLocalSearchParams } from "expo-router";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import styles from "./styles";
 
 const { width } = Dimensions.get("window");
@@ -157,19 +160,23 @@ export default function CorridaConcluida() {
                 strokeWidth={4}
               />
               {/* Ponto de início — verde */}
-              <Marker
-                coordinate={rota[0]}
-                anchor={{ x: 0.5, y: 0.5 }}
-                pinColor="green"
-                title="Início"
-              />
+              {Number.isFinite(rota[0]?.latitude) && Number.isFinite(rota[0]?.longitude) && (
+                <Marker
+                  coordinate={rota[0]}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  pinColor="green"
+                  title="Início"
+                />
+              )}
               {/* Ponto de fim — vermelho */}
-              <Marker
-                coordinate={rota[rota.length - 1]}
-                anchor={{ x: 0.5, y: 0.5 }}
-                pinColor="red"
-                title="Fim"
-              />
+              {Number.isFinite(rota[rota.length - 1]?.latitude) && Number.isFinite(rota[rota.length - 1]?.longitude) && (
+                <Marker
+                  coordinate={rota[rota.length - 1]}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  pinColor="red"
+                  title="Fim"
+                />
+              )}
             </MapView>
           ) : (
             <View style={[styles.map, styles.mapEmpty]}>

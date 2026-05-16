@@ -1,14 +1,20 @@
-import React, { useEffect, useRef } from "react";
-import {
-  View, Text, StyleSheet, TouchableOpacity,
-  Modal, Animated, Pressable, Dimensions,
-} from "react-native";
-import { router } from "expo-router";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import Octicons from "@expo/vector-icons/Octicons";
+import { router } from "expo-router";
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  Dimensions,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import styles from './styles';
 
 const { height } = Dimensions.get("window");
-import styles from './styles';
 
 
 interface Props {
@@ -47,7 +53,7 @@ export default function ModalModoCorrida({ visivel, onFechar }: Props) {
 
   function irRotaProgramada() {
     onFechar();
-    setTimeout(() => router.push("../../../correndoPontoT"), 250);
+    setTimeout(() => router.push("/rotasSugeridas"), 250);
   }
 
   return (
@@ -89,7 +95,7 @@ export default function ModalModoCorrida({ visivel, onFechar }: Props) {
                 Conquiste Manaus do seu jeito!
               </Text>
             </View>
-            <FontAwesome5 name="chevron-right" size={14} color="rgba(255,255,255,0.6)" />
+            <FontAwesome5 name="chevron-right" size={14} color="rgba(255,255,255,0.6)"/>
           </TouchableOpacity>
         </Animated.View>
 
