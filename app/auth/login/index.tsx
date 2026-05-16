@@ -4,20 +4,20 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-import { auth } from '@/firebase/firebaseConfig';
-import { db } from '@/firebase/firebaseConfig';
+import { auth, db } from '@/firebase/firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Image } from 'react-native';
 import styles from './styles';
 
+// ── XP ────────────────────────────────────────────────────────────────────────
+import { initUsuario } from '@/app/hooks/useXP';
 
 interface DadosLogin {
   email: string;
   senha: string;
 }
 
-// ─── Gera um ID único no formato ID + 6 caracteres ────────────────────────────
 function gerarCodigoId(): string {
   return "ID" + Math.random().toString(36).slice(2, 8).toUpperCase();
 }
@@ -51,24 +51,28 @@ export default function Login() {
       const userCredential = await realizarLogin({ email, senha });
       const user = userCredential.user;
 
-      // ✅ Verifica e corrige documento incompleto no Firestore
-      const userRef = doc(db, "usuarios", user.uid);
+      // ── 1. Verifica e corrige campos básicos do documento ─────────────────
+      const userRef  = doc(db, "usuarios", user.uid);
       const userSnap = await getDoc(userRef);
-      const data = userSnap.data();
+      const data     = userSnap.data();
 
       const updates: Record<string, any> = { status: "online" };
 
-      if (!data?.codigoId) {
-        updates.codigoId = gerarCodigoId();
-      }
-      if (!data?.nome) {
-        updates.nome = user.displayName || "Corredor";
-      }
-      if (!data?.email) {
-        updates.email = user.email?.toLowerCase() || "";
-      }
+      if (!data?.codigoId) updates.codigoId = gerarCodigoId();
+      if (!data?.nome)     updates.nome     = user.displayName || "Corredor";
+      if (!data?.email)    updates.email    = user.email?.toLowerCase() || "";
 
       await updateDoc(userRef, updates);
+
+      // ── 2. initUsuario: cria campos de XP se for o primeiro acesso ────────
+      //    Se o documento já tiver xpTotal, nivel etc., não faz nada.
+      //    Se for um usuário novo (primeiro login), cria tudo e desbloqueia
+      //    a conquista "Bem-vindo, corredor!" 👟 automaticamente.
+      await initUsuario(user.uid, {
+        nome:     data?.nome     || user.displayName || "Corredor",
+        email:    data?.email    || user.email?.toLowerCase() || "",
+        codigoId: data?.codigoId || updates.codigoId,
+      });
 
       router.replace("/home");
     } catch (error: any) {
@@ -86,10 +90,10 @@ export default function Login() {
       setLoading(false);
     }
   };
+
   return (
     <View style={styles.background}>
       <View style={styles.headerContainer}>
-        {/* Logo centralizada como na imagem */}
         <Image
           source={require('../../../assets/images/logo.png')}
           style={{ width: 300, height: 300, resizeMode: 'contain', marginTop: -50 }}
@@ -111,6 +115,7 @@ export default function Login() {
             onChangeText={setEmail}
           />
         </View>
+
         <View style={styles.input}>
           <Ionicons name="lock-closed" size={20} color="#c1c1c1" style={{ marginRight: 10 }} />
           <TextInput
@@ -119,18 +124,16 @@ export default function Login() {
             placeholder="Senha"
             autoCapitalize='none'
             value={senha}
-             secureTextEntry={verSenha}
+            secureTextEntry={verSenha}
             onChangeText={setSenha}
           />
           <TouchableOpacity onPress={() => setVerSenha(!verSenha)}>
-              <Ionicons
-                name={verSenha ? "eye-off" : "eye"}
-                size={22}
-                color="#24B28D"
-              />
-            </TouchableOpacity>
-          
-      
+            <Ionicons
+              name={verSenha ? "eye-off" : "eye"}
+              size={22}
+              color="#24B28D"
+            />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
@@ -156,7 +159,6 @@ export default function Login() {
           <Text style={{ color: '#A0A0A0' }}>ou</Text>
         </View>
 
-        {/* Botão Google estilizado */}
         <TouchableOpacity style={styles.googleButton}>
           <Ionicons name="logo-google" size={20} color="#34ff01" style={{ marginRight: 10 }} />
           <Text style={{ color: '#1B2B48', fontWeight: '600' }}>Continuar com Google</Text>

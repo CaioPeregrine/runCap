@@ -1,144 +1,93 @@
-export const conquistasData = [
-  // Distância
+/**
+ * conquistasData.ts
+ *
+ * 10 conquistas — uma por nível (1 a 10).
+ * Nível 1 → desbloqueada no primeiro login.
+ * Níveis 2-10 → desbloqueadas ao completar corridas de Rotas Sugeridas.
+ */
+
+export interface Conquista {
+  id: string;
+  titulo: string;
+  descricao: string;
+  icone: string;
+  nivelRequerido: number;
+}
+
+export const conquistasData: Conquista[] = [
   {
-    id: "primeiro_km",
-    titulo: "Primeiro Quilômetro",
-    descricao: "Complete sua primeira corrida de 1 km",
-    icone: "🎬",
-    categoria: "distância",
+    id: "cq_nivel_1",
+    titulo: "Bem-vindo, corredor!",
+    descricao: "Você criou sua conta e deu o primeiro passo na sua jornada.",
+    icone: "👟",
+    nivelRequerido: 1,
   },
   {
-    id: "cinco_km",
-    titulo: "Cinco Quilômetros",
-    descricao: "Acumule 5 km corridos",
+    id: "cq_nivel_2",
+    titulo: "Primeiros passos",
+    descricao: "Completou sua primeira corrida e ganhou 200 XP.",
     icone: "🏃",
-    categoria: "distância",
+    nivelRequerido: 2,
   },
   {
-    id: "dez_km",
-    titulo: "Dez Quilômetros",
-    descricao: "Acumule 10 km corridos",
-    icone: "💪",
-    categoria: "distância",
-  },
-  {
-    id: "vinte_cinco_km",
-    titulo: "Vinte e Cinco",
-    descricao: "Acumule 25 km corridos",
-    icone: "🚀",
-    categoria: "distância",
-  },
-  {
-    id: "cinquenta_km",
-    titulo: "Cinquenta Quilômetros",
-    descricao: "Acumule 50 km corridos",
-    icone: "🏆",
-    categoria: "distância",
-  },
-  {
-    id: "cem_km",
-    titulo: "Centenário",
-    descricao: "Acumule 100 km corridos",
-    icone: "👑",
-    categoria: "distância",
-  },
-
-  // Sequência e Consistência
-  {
-    id: "primeira_corrida",
-    titulo: "Início Promissor",
-    descricao: "Complete sua primeira corrida",
-    icone: "🏅",
-    categoria: "sequência",
-  },
-  {
-    id: "sequencia_3",
-    titulo: "Sequência de Ouro",
-    descricao: "Corra 3 dias consecutivos",
-    icone: "📅",
-    categoria: "sequência",
-  },
-  {
-    id: "sequencia_7",
-    titulo: "Uma Semana",
-    descricao: "Corra 7 dias consecutivos",
-    icone: "⭐",
-    categoria: "sequência",
-  },
-  {
-    id: "sequencia_30",
-    titulo: "Mês Completo",
-    descricao: "Corra 30 dias consecutivos",
+    id: "cq_nivel_3",
+    titulo: "Ritmo constante",
+    descricao: "Você está pegando o ritmo. Continue assim!",
     icone: "🔥",
-    categoria: "sequência",
-  },
-
-  // Pontos Turísticos
-  {
-    id: "teatro_visitado",
-    titulo: "Apreciador de Arte",
-    descricao: "Visite o Teatro em uma corrida",
-    icone: "🎭",
-    categoria: "turismo",
+    nivelRequerido: 3,
   },
   {
-    id: "museu_visitado",
-    titulo: "Historiador",
-    descricao: "Visite o Museu em uma corrida",
-    icone: "🏛️",
-    categoria: "turismo",
-  },
-  {
-    id: "parque_visitado",
-    titulo: "Amigo da Natureza",
-    descricao: "Visite um Parque em uma corrida",
-    icone: "🌳",
-    categoria: "turismo",
-  },
-  {
-    id: "tres_pontos_turisticos",
-    titulo: "Turista Local",
-    descricao: "Visite 3 pontos turísticos diferentes",
+    id: "cq_nivel_4",
+    titulo: "Na trilha certa",
+    descricao: "Já acumulou 600 XP explorando Manaus.",
     icone: "🗺️",
-    categoria: "turismo",
-  },
-
-  // Áreas Fechadas
-  {
-    id: "primeira_area_fechada",
-    titulo: "Mapa Conquistado",
-    descricao: "Complete uma área fechada",
-    icone: "📍",
-    categoria: "áreas",
+    nivelRequerido: 4,
   },
   {
-    id: "cinco_areas_fechadas",
-    titulo: "Explorador de Mapas",
-    descricao: "Complete 5 áreas fechadas",
-    icone: "🎯",
-    categoria: "áreas",
+    id: "cq_nivel_5",
+    titulo: "Corredor dedicado",
+    descricao: "Metade do caminho percorrido. Você é dedicado!",
+    icone: "⭐",
+    nivelRequerido: 5,
   },
   {
-    id: "dez_areas_fechadas",
-    titulo: "Mestre dos Mapas",
-    descricao: "Complete 10 áreas fechadas",
-    icone: "🧭",
-    categoria: "áreas",
-  },
-
-  // Velocidade
-  {
-    id: "veloz",
-    titulo: "Velocista",
-    descricao: "Corra 1 km em menos de 5 minutos",
-    icone: "⚡",
-    categoria: "velocidade",
+    id: "cq_nivel_6",
+    titulo: "Maratonista em formação",
+    descricao: "Mais de 1000 XP acumulados. A maratona espera por você.",
+    icone: "🏅",
+    nivelRequerido: 6,
   },
   {
-    id: "extremamente_veloz",
-    titulo: "Relâmpago",
-    descricao: "Corra 1 km em menos de 4 minutos",
-    icone: "🌪️",
-    categoria: "velocidade",
+    id: "cq_nivel_7",
+    titulo: "Explorador da Amazônia",
+    descricao: "Você explorou as rotas de Manaus como um verdadeiro aventureiro.",
+    icone: "🌿",
+    nivelRequerido: 7,
+  },
+  {
+    id: "cq_nivel_8",
+    titulo: "Atleta urbano",
+    descricao: "Suas corridas marcam presença pelas ruas de Manaus.",
+    icone: "🏙️",
+    nivelRequerido: 8,
+  },
+  {
+    id: "cq_nivel_9",
+    titulo: "Quase no topo",
+    descricao: "Só falta um nível para a conquista máxima. Não pare agora!",
+    icone: "🚀",
+    nivelRequerido: 9,
+  },
+  {
+    id: "cq_nivel_10",
+    titulo: "Lenda de Manaus",
+    descricao: "Você chegou ao nível máximo. Uma verdadeira lenda das corridas!",
+    icone: "🏆",
+    nivelRequerido: 10,
   },
 ];
+
+/** Conquista de um nível específico (ou null). */
+export function conquistaDoNivel(nivel: number): Conquista | null {
+  return conquistasData.find((c) => c.nivelRequerido === nivel) ?? null;
+}

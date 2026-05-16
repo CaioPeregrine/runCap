@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 import styles from "./styles";
 
 interface ConquistaCardProps {
-  id: string;
+  id: string;        // ← adicionado
   titulo: string;
   descricao: string;
   icone: string;

@@ -13,14 +13,21 @@ import {
 import ConquistaCard from "./ConquistaCard";
 import { conquistasData } from "./conquistasData";
 import styles from "./styles";
+import XPProgressBar from "@/components/XPProgressBar";
+import { xpInicioDoNivel, xpFimDoNivel, XP_MAXIMO } from "@/app/hooks/useXP";
 
 interface Conquista {
   id: string;
   titulo: string;
   descricao: string;
   icone: string;
-  categoria: string;
+  nivelRequerido: number;
   desbloqueada: boolean;
+}
+
+interface EstadoXP {
+  xpTotal: number;
+  nivel: number;
 }
 
 export default function Conquistas() {
@@ -28,27 +35,29 @@ export default function Conquistas() {
   const uid = auth.currentUser?.uid ?? "";
 
   const [conquistas, setConquistas] = useState<Conquista[]>([]);
+  const [estadoXP, setEstadoXP]     = useState<EstadoXP>({ xpTotal: 0, nivel: 1 });
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    if (uid) {
-      fetchConquistas();
-    }
+    if (uid) fetchConquistas();
   }, [uid]);
 
-  /**
-   * fetchConquistas
-   * Lê array de ids desbloqueados do Firestore e mescla com conquistasData
-   */
   async function fetchConquistas() {
     try {
       const uDoc = await getDoc(doc(db, "usuarios", uid));
-      const idsDesbloqueadas: string[] = uDoc.data()?.conquistas ?? [];
+      const data = uDoc.data() ?? {};
+
+      const idsDesbloqueadas: string[] = data.conquistas ?? [];
       const conquistasComStatus = conquistasData.map((c) => ({
         ...c,
         desbloqueada: idsDesbloqueadas.includes(c.id),
       }));
+
       setConquistas(conquistasComStatus);
+      setEstadoXP({
+        xpTotal: data.xpTotal ?? data.xp ?? 0,
+        nivel:   data.nivel   ?? 1,
+      });
     } catch (e) {
       console.error("Erro ao buscar conquistas:", e);
       Alert.alert("Erro", "Não foi possível carregar as conquistas.");
@@ -66,10 +75,15 @@ export default function Conquistas() {
   }
 
   const desbloqueadas = conquistas.filter((c) => c.desbloqueada).length;
+  const { xpTotal, nivel } = estadoXP;
+  const ehMaximo  = xpTotal >= XP_MAXIMO;
+  const xpInicio  = xpInicioDoNivel(nivel);
+  const xpFim     = ehMaximo ? XP_MAXIMO : xpFimDoNivel(nivel);
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F4F8" />
+
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Conquistas</Text>
@@ -77,6 +91,17 @@ export default function Conquistas() {
             {desbloqueadas} de {conquistasData.length} desafios desbloqueados.
           </Text>
         </View>
+      </View>
+
+      {/* ── Barra de XP ── */}
+      <View style={{ marginBottom: 12 }}>
+        <XPProgressBar
+          xpTotal={xpTotal}
+          xpInicioNivel={xpInicio}
+          xpFimNivel={xpFim}
+          nivel={nivel}
+          nivelMaximo={ehMaximo}
+        />
       </View>
 
       <FlatList
