@@ -11,6 +11,7 @@ import styles from "./styles";
 
 import {
   adicionarXP,
+  desbloquearPonto,
   ResultadoXP,
   NIVEL_MAXIMO,
   xpInicioDoNivel,
@@ -34,15 +35,15 @@ function calcularRegiao(coords: Coord[]) {
   const minLat = Math.min(...lats), maxLat = Math.max(...lats);
   const minLon = Math.min(...lons), maxLon = Math.max(...lons);
   return {
-    latitude:       (minLat + maxLat) / 2,
-    longitude:      (minLon + maxLon) / 2,
-    latitudeDelta:  Math.max((maxLat - minLat) * 1.5, 0.002),
+    latitude: (minLat + maxLat) / 2,
+    longitude: (minLon + maxLon) / 2,
+    latitudeDelta: Math.max((maxLat - minLat) * 1.5, 0.002),
     longitudeDelta: Math.max((maxLon - minLon) * 1.5, 0.002),
   };
 }
 
 function estimarCalorias(distKm: number) { return Math.round(distKm * 60); }
-function estimarPassos(distKm: number)   { return Math.round(distKm * 1300); }
+function estimarPassos(distKm: number) { return Math.round(distKm * 1300); }
 
 // ─── Modal de subida de nível ─────────────────────────────────────────────────
 function ModalNivel({
@@ -59,13 +60,13 @@ function ModalNivel({
   nivelMaximo: boolean;
 }) {
   const scaleAnim = useRef(new Animated.Value(0.75)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visivel) {
       Animated.parallel([
         Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
-        Animated.timing(fadeAnim,  { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
       ]).start();
     } else {
       scaleAnim.setValue(0.75);
@@ -138,54 +139,59 @@ export default function CorridaConcluida() {
   const uid = getAuth().currentUser?.uid ?? "";
 
   const params = useLocalSearchParams<{
-    distancia_km:    string;
+    distancia_km: string;
     tempo_formatado: string;
-    pace:            string;
-    rota:            string;
-    origem:          string; // "rota_sugerida" = conta XP | qualquer outro = não conta
+    pace: string;
+    rota: string;
+    origem: string; // "rota_sugerida" = conta XP | qualquer outro = não conta
+    pontoId: string; // id do ponto turístico para desbloquear o card
   }>();
 
-  const distKm = parseFloat(params.distancia_km    ?? "0");
-  const tempo  = params.tempo_formatado             ?? "00:00";
-  const pace   = params.pace                        ?? "--:-- /km";
-  const origem = params.origem                      ?? "";
+  const distKm = parseFloat(params.distancia_km ?? "0");
+  const tempo = params.tempo_formatado ?? "00:00";
+  const pace = params.pace ?? "--:-- /km";
+  const origem = params.origem ?? "";
+  const pontoId = params.pontoId ?? "";
 
   const rota: Coord[] = (() => {
     try { return params.rota ? JSON.parse(params.rota) : []; }
     catch { return []; }
   })();
 
-  const regiao   = calcularRegiao(rota);
+  const regiao = calcularRegiao(rota);
   const calorias = estimarCalorias(distKm);
-  const passos   = estimarPassos(distKm);
+  const passos = estimarPassos(distKm);
 
   // ── Estado de XP ────────────────────────────────────────────────────────────
-  const [resultadoXP, setResultadoXP]   = useState<ResultadoXP | null>(null);
-  const [modalNivel,  setModalNivel]    = useState(false);
+  const [resultadoXP, setResultadoXP] = useState<ResultadoXP | null>(null);
+  const [modalNivel, setModalNivel] = useState(false);
   const xpExecutado = useRef(false);
 
   // ── Animações da tela ────────────────────────────────────────────────────────
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
     // Animação de entrada
     Animated.parallel([
-      Animated.timing(fadeAnim,  { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, tension: 80, friction: 10, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8,  useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
     ]).start();
 
     // XP — só processa se veio de uma Rota Sugerida e ainda não foi processado
     if (origem !== "rota_sugerida" || !uid || xpExecutado.current) return;
     xpExecutado.current = true;
 
-    adicionarXP(uid)
-      .then((res) => {
+    // Roda XP e desbloqueio do ponto em paralelo
+    Promise.all([
+      adicionarXP(uid),
+      desbloquearPonto(uid, pontoId),
+    ])
+      .then(([res]) => {
         setResultadoXP(res);
         if (res.subiuNivel) {
-          // Aguarda a animação da barra encher antes de abrir o modal
           setTimeout(() => setModalNivel(true), 1800);
         }
       })
@@ -206,15 +212,15 @@ export default function CorridaConcluida() {
   // ── Props da barra de XP ─────────────────────────────────────────────────────
   const xpBarraProps = resultadoXP
     ? {
-        xpTotal:          resultadoXP.xpTotalDepois,
-        xpInicioNivel:    resultadoXP.xpInicioNivel,
-        xpFimNivel:       resultadoXP.xpFimNivel,
-        nivel:            resultadoXP.nivelDepois,
-        xpNaBarraAnterior: resultadoXP.xpNaBarraAntes,
-        mostrarGanho:     resultadoXP.xpGanho > 0,
-        xpGanho:          resultadoXP.xpGanho,
-        nivelMaximo:      resultadoXP.nivelMaximo,
-      }
+      xpTotal: resultadoXP.xpTotalDepois,
+      xpInicioNivel: resultadoXP.xpInicioNivel,
+      xpFimNivel: resultadoXP.xpFimNivel,
+      nivel: resultadoXP.nivelDepois,
+      xpNaBarraAnterior: resultadoXP.xpNaBarraAntes,
+      mostrarGanho: resultadoXP.xpGanho > 0,
+      xpGanho: resultadoXP.xpGanho,
+      nivelMaximo: resultadoXP.nivelMaximo,
+    }
     : null;
 
   // ── Compartilhar ─────────────────────────────────────────────────────────────
@@ -226,7 +232,7 @@ export default function CorridaConcluida() {
 
   async function compartilharWhatsApp() {
     const url = `whatsapp://send?text=${encodeURIComponent(textoCompartilhar)}`;
-    const ok  = await Linking.canOpenURL(url);
+    const ok = await Linking.canOpenURL(url);
     if (ok) Linking.openURL(url);
     else Share.share({ message: textoCompartilhar });
   }
@@ -394,11 +400,11 @@ const estilosModal = StyleSheet.create({
     shadowRadius: 28,
     elevation: 12,
   },
-  emoji:  { fontSize: 52, marginBottom: 8 },
+  emoji: { fontSize: 52, marginBottom: 8 },
   titulo: { fontSize: 28, fontWeight: "800", color: "#1F2937", marginBottom: 4 },
-  sub:    { fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 20 },
-  secaoCQ:  { width: "100%", marginBottom: 20 },
-  labelCQ:  {
+  sub: { fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 20 },
+  secaoCQ: { width: "100%", marginBottom: 20 },
+  labelCQ: {
     fontSize: 11, fontWeight: "700", color: "#0F6E56",
     textTransform: "uppercase", letterSpacing: 0.6,
     marginBottom: 10, textAlign: "center",
@@ -410,15 +416,15 @@ const estilosModal = StyleSheet.create({
     borderWidth: 1, borderColor: "#22C3A3",
   },
   cqIcone: { fontSize: 28 },
-  cqNome:  { fontSize: 14, fontWeight: "700", color: "#1F2937", marginBottom: 2 },
-  cqDesc:  { fontSize: 12, color: "#6B7280", lineHeight: 16 },
+  cqNome: { fontSize: 14, fontWeight: "700", color: "#1F2937", marginBottom: 2 },
+  cqDesc: { fontSize: 12, color: "#6B7280", lineHeight: 16 },
   bolinhasWrap: {
     flexDirection: "row", gap: 5,
     alignItems: "center", marginBottom: 24,
   },
-  bolinha:      { width: 16, height: 16, borderRadius: 8, justifyContent: "center", alignItems: "center" },
+  bolinha: { width: 16, height: 16, borderRadius: 8, justifyContent: "center", alignItems: "center" },
   bolinhaAtual: { width: 24, height: 24, borderRadius: 12 },
-  bolinhaNum:   { fontSize: 9, fontWeight: "800", color: "#FFFFFF" },
-  btnOk:        { backgroundColor: "#22C3A3", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 44 },
-  btnOkText:    { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  bolinhaNum: { fontSize: 9, fontWeight: "800", color: "#FFFFFF" },
+  btnOk: { backgroundColor: "#22C3A3", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 44 },
+  btnOkText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 });

@@ -1,7 +1,7 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { PontoTuristico } from "../app/hooks/usePontosTuristicos";
-import { XP_POR_CORRIDA } from "@/app/hooks/useXP";
+import { XP_POR_CORRIDA } from "../app/hooks/useXP";
 
 type Props = { ponto: PontoTuristico };
 
@@ -16,6 +16,7 @@ export default function CardSugeridos({ ponto }: Props) {
         latitude:  ponto.latitude.toString(),
         longitude: ponto.longitude.toString(),
         origem:    "rota_sugerida", // ← flag que autoriza o XP na conclusão
+        pontoId:   ponto.id,         // ← id para desbloquear o card turístico
       },
     });
   }

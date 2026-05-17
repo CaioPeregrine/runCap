@@ -124,10 +124,26 @@ export async function initUsuario(
     // ── Outros ──
     maiorSequencia:    0,
     totalCorridas:     0,
+    pontosVisitados:   [], // ids dos pontos turísticos concluídos
     criadoEm:          new Date().toISOString(),
   });
 
   return true; // primeiro acesso
+}
+
+// ─── desbloquearPonto ─────────────────────────────────────────────────────────
+
+/**
+ * Registra o ponto turístico como visitado no Firestore.
+ * arrayUnion garante que o mesmo ponto não seja adicionado duas vezes.
+ * Chame no corridaConcluida junto com adicionarXP.
+ */
+export async function desbloquearPonto(uid: string, pontoId: string): Promise<void> {
+  if (!uid || !pontoId) return;
+  const ref = doc(db, 'usuarios', uid);
+  await updateDoc(ref, {
+    pontosVisitados: arrayUnion(pontoId),
+  });
 }
 
 // ─── adicionarXP ─────────────────────────────────────────────────────────────
