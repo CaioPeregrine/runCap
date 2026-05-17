@@ -17,13 +17,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 28,
     paddingHorizontal: 20,
-    height:350, 
-  },
-  
-  metricsRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 16,
+    height: 350,
   },
   metric: {
     alignItems: "center",
@@ -33,15 +27,10 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
   },
-  metricLabel: {
-    color: "#8E8E93",
-    fontSize: 12,
-    marginTop: 2,
-  },
   buttonsRow: {
     flexDirection: "row",
     gap: 10,
-    
+
   },
   btn: {
     flex: 1,
@@ -49,7 +38,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    
+
   },
   btnStart: {
     backgroundColor: "#22C3A3",
@@ -71,35 +60,35 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 13,
   },
-  cards:{
+  cards: {
     width: '100%',
     height: 120,
     position: 'absolute',
     top: 80,
     alignItems: 'center',
-    flexDirection:"row",
-    justifyContent:"space-between"
+    flexDirection: "row",
+    justifyContent: "space-between"
   },
   btncards: {
-    backgroundColor:"#ffff",
-    height:"100%",
-    width:"32%",
-    borderRadius:10,
-    alignItems:"center",
-    justifyContent:"center",
-    flexDirection:"column"
-  
-   
+    backgroundColor: "#ffff",
+    height: "100%",
+    width: "32%",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "column"
+
+
   },
-  estatis:{
-    backgroundColor:"#22C3A3",
-    width:"100%",
-    height:220,
-    top:220,
-    position:"absolute",
-    borderRadius:10,
-    opacity:0.5,
-    
+  estatis: {
+    backgroundColor: "#22C3A3",
+    width: "100%",
+    height: 220,
+    top: 220,
+    position: "absolute",
+    borderRadius: 10,
+    opacity: 0.5,
+
   },
   drawerButton: {
     position: "absolute",
@@ -218,6 +207,271 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontSize: 16,
     fontWeight: "500",
-  }
+  },
+
+  btnCentralizar: {
+
+    position: "absolute",
+
+    bottom: 160,
+
+    right: 16,
+
+    zIndex: 10,
+
+    width: 44,
+
+    height: 44,
+
+    borderRadius: 22,
+
+    backgroundColor: "#fff",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    shadowColor: "#000",
+
+    shadowOpacity: 0.15,
+
+    shadowRadius: 6,
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
+    elevation: 4,
+  },
+
+  markerCapturado: {
+
+    width: 36,
+
+    height: 36,
+
+    borderRadius: 18,
+
+    backgroundColor: "#FFD700",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    borderWidth: 2,
+
+    borderColor: "#fff",
+
+    shadowColor: "#000",
+
+    shadowOpacity: 0.25,
+
+    shadowRadius: 5,
+
+    elevation: 5,
+  },
+
+  card: {
+
+    position: "absolute",
+
+    bottom: 160,
+
+    left: 16,
+
+    right: 16,
+
+    backgroundColor: "#fff",
+
+    borderRadius: 20,
+
+    padding: 16,
+
+    zIndex: 20,
+
+    shadowColor: "#000",
+
+    shadowOpacity: 0.15,
+
+    shadowRadius: 12,
+
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+
+    elevation: 8,
+  },
+
+  cardClose: {
+
+    position: "absolute",
+
+    top: 12,
+
+    right: 12,
+  },
+
+ 
+  avatarPlaceholder: {
+
+    backgroundColor: "#2C3F69",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  cardNome: {
+
+    fontSize: 16,
+
+    fontWeight: "800",
+
+    color: "#2C3F69",
+  },
+
+  cardData: {
+
+    fontSize: 12,
+
+    color: "#888",
+
+    marginTop: 2,
+  },
+
+  cardCapturada: {
+
+    fontSize: 11,
+
+    color: "#FFD700",
+
+    fontWeight: "700",
+
+    marginTop: 2,
+  },
+
+  metricsRow: {
+
+    flexDirection: "row",
+
+    justifyContent: "space-around",
+
+    marginBottom: 14,
+
+    paddingTop: 4,
+
+    borderTopWidth: 1,
+
+    borderTopColor: "#f0f0f0",
+
+    marginTop: 4,
+
+    paddingBottom: 4,
+  },
+
+  metricValor: {
+
+    fontSize: 20,
+
+    fontWeight: "800",
+
+    color: "#2C3F69",
+
+    textAlign: "center",
+  },
+
+  metricLabel: {
+
+    fontSize: 11,
+
+    color: "#888",
+
+    textAlign: "center",
+  },
+
+  btnCapturar: {
+
+    backgroundColor: "#2C3F69",
+
+    borderRadius: 12,
+
+    paddingVertical: 12,
+
+    alignItems: "center",
+  },
+
+  btnCapturarJa: {
+
+    backgroundColor: "#aaa",
+  },
+
+  btnCapturarTexto: {
+
+    color: "#fff",
+
+    fontWeight: "700",
+
+    fontSize: 14,
+  },
+
+  modalBg: {
+
+    flex: 1,
+
+    backgroundColor: "rgba(0,0,0,0.5)",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  modalBox: {
+
+    backgroundColor: "#fff",
+
+    borderRadius: 20,
+
+    padding: 32,
+
+    alignItems: "center",
+
+    width: 280,
+  },
+
+  modalTitulo: {
+
+    fontSize: 22,
+
+    fontWeight: "800",
+
+    color: "#2C3F69",
+
+    marginBottom: 8,
+  },
+
+  modalSub: {
+
+    fontSize: 14,
+
+    color: "#888",
+
+    textAlign: "center",
+
+    marginBottom: 20,
+  },
+
+  modalBtn: {
+
+    backgroundColor: "#2C3F69",
+
+    borderRadius: 12,
+
+    paddingHorizontal: 32,
+
+    paddingVertical: 12,
+  },
+
 });
- export default styles;
+export default styles;
