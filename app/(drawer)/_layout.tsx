@@ -44,7 +44,7 @@ export default function DrawerLayout() {
         
         <Drawer.Screen 
           name="pontosTuristicos/index" 
-          options={{ drawerLabel: "Pontos Turísticos" }} 
+          options={{ drawerLabel: "Meus Pontos Turísticos" }} 
         />
       </Drawer>
     </GestureHandlerRootView>
