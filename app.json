@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "runCap",
-    "slug": "runCap",
+    "slug": "runcap",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -34,8 +34,8 @@
       "favicon": "./assets/images/logo.png"
     },
     "plugins": [
-      "expo-router"
-     
+      "expo-router",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
