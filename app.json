@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.runcap.app"
     },
     "android": {
       "package": "com.runcap.app",
@@ -34,8 +35,15 @@
       "favicon": "./assets/images/logo.png"
     },
     "plugins": [
-      "expo-router"
-     
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/logo.png",
+          "color": "#ffffff",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

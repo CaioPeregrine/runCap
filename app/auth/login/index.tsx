@@ -156,13 +156,13 @@ export default function Login() {
         </TouchableOpacity>
 
         <View style={{ alignItems: 'center', marginVertical: 15 }}>
-          <Text style={{ color: '#A0A0A0' }}>ou</Text>
+          {/* <Text style={{ color: '#A0A0A0' }}>ou</Text> */}
         </View>
 
-        <TouchableOpacity style={styles.googleButton}>
+        {/* <TouchableOpacity style={styles.googleButton}>
           <Ionicons name="logo-google" size={20} color="#34ff01" style={{ marginRight: 10 }} />
           <Text style={{ color: '#1B2B48', fontWeight: '600' }}>Continuar com Google</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <View style={styles.viewCadastre}>
