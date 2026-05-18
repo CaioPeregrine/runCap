@@ -20,7 +20,7 @@ export default function CardTuristicos({
   if (!desbloqueado) {
     return (
       <View style={[styles.card, styles.cardBloqueado]}>
-        {/* Imagem escureciida */}
+        {/* Imagem escurecida */}
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={[styles.img, styles.imgBloqueada]} />
         ) : (
