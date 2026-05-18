@@ -305,13 +305,7 @@ async function handleFinish() {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity
-                onPress={() => router.back()}
-                style={{ position: "absolute", top: 50, left: 15, zIndex: 10 }}
-            >
-                <Feather name="arrow-left" size={30} color="black" />
-            </TouchableOpacity>
-
+            
             <Text style={[styles.statusText, { top: 40, right: 0, zIndex: 10, alignItems: "center", fontSize: 18, fontWeight: "600", color: "#000000" }]}>
                 {status === "running" ? " Correndo…" : " Pausado"}
             </Text>
@@ -413,7 +407,6 @@ async function handleFinish() {
                         <Text style={styles.metricLabel}>pace</Text>
                     </View>
                 </View>
-
                 <View style={styles.buttonsRow}>
                     <TouchableOpacity style={[styles.btn, styles.btnPause]} onPress={handlePauseResume}>
                         <Text style={styles.btnText}>{status === "running" ? "  Pausar" : "  Retomar"}</Text>

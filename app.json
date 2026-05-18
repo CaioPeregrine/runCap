@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "runcap",
+    "name": "runCap",
     "slug": "runcap",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,12 +8,13 @@
     "scheme": "runcap",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.runcap.app"
     },
     "android": {
       "package": "com.runcap.app",
@@ -34,8 +35,8 @@
       "favicon": "./assets/images/logo.png"
     },
     "plugins": [
-      "expo-router"
-     
+      "expo-router",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
