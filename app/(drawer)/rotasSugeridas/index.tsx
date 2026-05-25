@@ -7,6 +7,7 @@ import { db } from "@/firebase/firebaseConfig";
 import CardSugeridos from "@/components/CardSugeridos";
 import { usePontosTuristicos } from "@/app/hooks/usePontosTuristicos";
 import styles from "./styles";
+import CardAmigos from "@/components/cardAmigos";
 
 export default function PontosTuristicos() {
   const uid = getAuth().currentUser?.uid ?? "";
@@ -46,6 +47,7 @@ export default function PontosTuristicos() {
             ponto={ponto}
           />
         ))}
+       
       </View>
     </ScrollView>
   );

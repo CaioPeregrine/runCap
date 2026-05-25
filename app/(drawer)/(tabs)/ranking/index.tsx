@@ -31,6 +31,7 @@ import {
 } from "react-native";
 import { DrawerActions } from '@react-navigation/native';
 import styles from "./styles";
+import CardAmigos from "@/components/cardAmigos";
 
 const { width } = Dimensions.get("window");
 
@@ -143,11 +144,11 @@ function Podium({ users }: { users: RankingUser[] }) {
   return (
     <View style={{
       flexDirection: "row", alignItems: "flex-end",
-      paddingHorizontal: 10,height: 210, marginBottom: 5,marginTop:45
+      paddingHorizontal: 10, height: 210, marginBottom: 5, marginTop: 45
     }}>
       <PodiumItem user={second} position={2} podiumHeight={100} />
-      <PodiumItem user={first}  position={1} podiumHeight={140} />
-      <PodiumItem user={third}  position={3} podiumHeight={70} />
+      <PodiumItem user={first} position={1} podiumHeight={140} />
+      <PodiumItem user={third} position={3} podiumHeight={70} />
     </View>
   );
 }
@@ -176,10 +177,10 @@ function RankItem({ user, position, isAmigos }: {
 // ─── Tela principal ───────────────────────────────────────────────────────────
 export default function RankingScreen() {
   const navigation = useNavigation();
-  const [tab, setTab]                     = useState<"regional" | "amigos">("regional");
+  const [tab, setTab] = useState<"regional" | "amigos">("regional");
   const [regionalUsers, setRegionalUsers] = useState<RankingUser[]>([]);
-  const [amigosUsers, setAmigosUsers]     = useState<RankingUser[]>([]);
-  const [loading, setLoading]             = useState(true);
+  const [amigosUsers, setAmigosUsers] = useState<RankingUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const tabAnim = useRef(new Animated.Value(0)).current;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerAnim = useRef(new Animated.Value(-width * 0.8)).current;
@@ -367,27 +368,27 @@ export default function RankingScreen() {
     Animated.spring(tabAnim, { toValue: t === "regional" ? 0 : 1, useNativeDriver: false }).start();
   }
 
- 
+
 
   const users = tab === "regional" ? regionalUsers : amigosUsers;
-  const top3  = users.slice(0, 3);
-  const rest  = users.slice(3);
+  const top3 = users.slice(0, 3);
+  const rest = users.slice(3);
 
   const tabLeft = tabAnim.interpolate({ inputRange: [0, 1], outputRange: ["2%", "52%"] });
   return (
     <View style={styles.container}>
-         {/* Botão hamburguer */}
-            <TouchableOpacity 
-              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-              style={{ position: 'absolute', top: 80, left: 15, zIndex: 10 }}
-            >
-              <Feather name="menu" size={30} color="white" />
-            </TouchableOpacity> 
+      {/* Botão hamburguer */}
+      <TouchableOpacity
+        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        style={{ position: 'absolute', top: 80, left: 15, zIndex: 10 }}
+      >
+        <Feather name="menu" size={30} color="white" />
+      </TouchableOpacity>
       <StatusBar barStyle="light-content" backgroundColor="#2C3F69" />
 
       {/* BLOCO AZUL */}
       <View style={styles.blueBlock}>
-        
+
         <Text style={styles.title}>Ranking</Text>
 
         <View style={styles.tabContainer}>
@@ -423,11 +424,15 @@ export default function RankingScreen() {
           {rest.map((u, i) => (
             <RankItem key={u.id} user={u} position={i + 4} isAmigos={tab === "amigos"} />
           ))}
+         
+
         </ScrollView>
+       
       )}
+      <CardAmigos />
 
     </View>
-    
+
   );
 }
 

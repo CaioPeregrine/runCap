@@ -225,7 +225,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     margin: 90,
     width: 120, 
-  },  
+  },
+
   
 });
 export default styles;
