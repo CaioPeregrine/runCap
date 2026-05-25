@@ -1,3 +1,9 @@
+
+
+
+
+
+
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 import { getAuth } from "firebase/auth";
@@ -9,11 +15,11 @@ import { usePontosTuristicos } from "@/app/hooks/usePontosTuristicos";
 import styles from "./styles";
 
 export default function PontosTuristicos() {
-  const uid    = getAuth().currentUser?.uid ?? "";
+  const uid = getAuth().currentUser?.uid ?? "";
   const pontos = usePontosTuristicos(); // busca coleção "pontosTuristicos" do Firestore
 
   const [pontosVisitados, setPontosVisitados] = useState<string[]>([]);
-  const [carregando, setCarregando]           = useState(true);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     if (!uid) return;
@@ -61,3 +67,4 @@ export default function PontosTuristicos() {
     </ScrollView>
   );
 }
+
