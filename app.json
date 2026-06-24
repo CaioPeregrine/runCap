@@ -7,14 +7,12 @@
     "icon": "./assets/images/logo.png",
     "scheme": "runcap",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.runcap.app",
+      "config": {
+        "googleMapsApiKey": "SUA_CHAVE_IOS_AQUI"
+      },
       "infoPlist": {
         "NSLocationAlwaysAndWhenInUseUsageDescription": "O runCap precisa da sua localização para narrar pontos turísticos mesmo com a tela bloqueada.",
         "NSLocationWhenInUseUsageDescription": "O runCap usa sua localização para registrar sua corrida.",
@@ -24,6 +22,11 @@
     "android": {
       "package": "com.runcap.app",
       "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAKJrk8lYlpZ6Rk_j3DEtpaehtrFSqtCTg"
+        }
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
@@ -36,11 +39,6 @@
         "FOREGROUND_SERVICE_LOCATION"
       ]
     },
-    "config": {
-      "googleMaps": {
-        "apiKey": "AIzaSyAKJrk8lYlpZ6Rk_j3DEtpaehtrFSqtCTg"
-      }
-    },
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -49,6 +47,14 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
       [
         "expo-location",
         {
