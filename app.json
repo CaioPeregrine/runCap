@@ -18,10 +18,7 @@
       "infoPlist": {
         "NSLocationAlwaysAndWhenInUseUsageDescription": "O runCap precisa da sua localização para narrar pontos turísticos mesmo com a tela bloqueada.",
         "NSLocationWhenInUseUsageDescription": "O runCap usa sua localização para registrar sua corrida.",
-        "UIBackgroundModes": [
-          "location",
-          "audio"
-        ]
+        "UIBackgroundModes": ["location", "audio"]
       }
     },
     "android": {
@@ -60,7 +57,8 @@
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
-      ]
+      ],
+      "expo-task-manager"
     ],
     "experiments": {
       "typedRoutes": true
