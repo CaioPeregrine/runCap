@@ -14,13 +14,27 @@ import {
   Animated, Image, Modal, ScrollView,
   StyleSheet, Text, TouchableOpacity, View,
 } from "react-native";
+import MapView, { Marker, Polygon, Polyline } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapView, { Marker, Polygon, Polyline, Region } from "react-native-maps";
 import Ofensiva from "../../../../components/ofensiva/ofensiva";
 import { db } from "../../../../firebase/firebaseConfig";
 import { useConquistas } from "../../../hooks/useConquistas";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+// ─── Tema de cores ─────────────────────────────────────────────────────────────
+const CORES = {
+  primario: "#2C3F69",
+  verde: "#22C3A3",
+  dourado: "#FFD700",   // rota capturada por outro
+  vermelho: "#FF3B30",   // rota que você perdeu
+  laranja: "#FF9F0A",   // disputado
+  fallback: "#1a58e9",
+  fundo: "#F2F4F8",
+  branco: "#FFFFFF",
+  cinza: "#8E8E93",
+  bordaSutil: "#F0F0F0",
+};
+
+// ─── Tipos ─────────────────────────────────────────────────────────────────────
 type Coord = { latitude: number; longitude: number };
 type ModoMapa = "global" | "minhas";
 
@@ -29,21 +43,20 @@ type Corrida = {
   distancia_km: number; tempo_formatado: string; pace: string; criadoEm: any;
   nomeOriginal: string; avatarOriginal?: string; corOriginal: string;
   capturadaPor?: string; capturadaPorNome?: string; capturadaPorCor?: string;
-  historicoCaptura?: { uid: string; nome: string; cor: string }[];
+  historicoCaptura?: { uid: string; nome: string; cor: string; data?: any }[];
   centro: Coord; fechada: boolean;
 };
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
-const COR_FALLBACK   = "#1a58e9";
+// ─── Constantes ────────────────────────────────────────────────────────────────
 const TAB_BAR_HEIGHT = 60;
-const PAINEL_ALTURA  = 420;
-const PALETA_CORES   = [
-  "#1a58e9","#e91a1a","#1ae94a","#e9c51a",
-  "#e91ae2","#1ae9e2","#ff6b00","#9b1ae9",
-  "#e9821a","#00b300","#005ce6","#e9001a",
+const PAINEL_ALTURA = 420;
+const PALETA_CORES = [
+  "#1a58e9", "#e91a1a", "#1ae94a", "#e9c51a",
+  "#e91ae2", "#1ae9e2", "#ff6b00", "#9b1ae9",
+  "#e9821a", "#00b300", "#005ce6", "#e9001a",
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(ts: any): string {
   if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
@@ -64,12 +77,11 @@ function isAreaFechada(rota: Coord[]): boolean {
 
 function centroDaRota(rota: Coord[]): Coord {
   return {
-    latitude:  rota.reduce((s, c) => s + c.latitude,  0) / rota.length,
+    latitude: rota.reduce((s, c) => s + c.latitude, 0) / rota.length,
     longitude: rota.reduce((s, c) => s + c.longitude, 0) / rota.length,
   };
 }
 
-// Detecta se dois segmentos se cruzam (para badge "disputado")
 function segmentosSeIntersectam(p1: Coord, p2: Coord, p3: Coord, p4: Coord): boolean {
   const cross = (ax: number, ay: number, bx: number, by: number, cx: number, cy: number) =>
     (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
@@ -78,7 +90,7 @@ function segmentosSeIntersectam(p1: Coord, p2: Coord, p3: Coord, p4: Coord): boo
   const d3 = cross(p1.longitude, p1.latitude, p2.longitude, p2.latitude, p3.longitude, p3.latitude);
   const d4 = cross(p1.longitude, p1.latitude, p2.longitude, p2.latitude, p4.longitude, p4.latitude);
   return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
-         ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+    ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
 }
 
 function rotasSeIntersectam(rotaA: Coord[], rotaB: Coord[]): boolean {
@@ -87,15 +99,10 @@ function rotasSeIntersectam(rotaA: Coord[], rotaB: Coord[]): boolean {
     for (let j = 0; j < rotaB.length - 1; j++) {
       const p1 = rotaA[i], p2 = rotaA[i + 1];
       const p3 = rotaB[j], p4 = rotaB[j + 1];
-      const minBLat = Math.min(p3.latitude, p4.latitude) - TOLE;
-      const maxBLat = Math.max(p3.latitude, p4.latitude) + TOLE;
-      const minBLng = Math.min(p3.longitude, p4.longitude) - TOLE;
-      const maxBLng = Math.max(p3.longitude, p4.longitude) + TOLE;
-      const minALat = Math.min(p1.latitude, p2.latitude);
-      const maxALat = Math.max(p1.latitude, p2.latitude);
-      const minALng = Math.min(p1.longitude, p2.longitude);
-      const maxALng = Math.max(p1.longitude, p2.longitude);
-      if (maxALat < minBLat || minALat > maxBLat || maxALng < minBLng || minALng > maxBLng) continue;
+      if (
+        Math.max(p1.latitude, p2.latitude) < Math.min(p3.latitude, p4.latitude) - TOLE ||
+        Math.min(p1.latitude, p2.latitude) > Math.max(p3.latitude, p4.latitude) + TOLE
+      ) continue;
       if (segmentosSeIntersectam(p1, p2, p3, p4)) return true;
     }
   }
@@ -108,34 +115,85 @@ class KalmanFilter {
   init(v: number) { this.x = v; }
 }
 
-// ─── Componente ───────────────────────────────────────────────────────────────
+// ─── Avatar marker memo ────────────────────────────────────────────────────────
+const AvatarMarker = React.memo(({ corrida, selecionada, onPress }: {
+  corrida: Corrida; selecionada: boolean; onPress: () => void;
+}) => {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (selecionada) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.3, duration: 400, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1.0, duration: 400, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(1);
+    }
+  }, [selecionada]);
+
+  const corBorda = corrida.capturadaPor && corrida.capturadaPor !== corrida.uid
+    ? CORES.dourado
+    : corrida.corOriginal;
+
+  return (
+    <Marker
+      coordinate={corrida.centro}
+      anchor={{ x: 0.5, y: 0.5 }}
+      tracksViewChanges={selecionada} // só re-renderiza se selecionada — evita travamento
+      onPress={onPress}
+    >
+      <Animated.View style={[
+        local.avatarMarkerWrap,
+        { borderColor: corBorda },
+        selecionada && { transform: [{ scale: pulseAnim }] },
+      ]}>
+        {corrida.avatarOriginal
+          ? <Image source={{ uri: corrida.avatarOriginal }} style={local.avatarMarkerImg} />
+          : <View style={[local.avatarMarkerPlaceholder, { backgroundColor: corrida.corOriginal }]}>
+            <Text style={local.avatarMarkerLetra}>
+              {corrida.nomeOriginal.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        }
+      </Animated.View>
+    </Marker>
+  );
+});
+
+// ─── Componente principal ──────────────────────────────────────────────────────
 export default function Home() {
-  const [location, setLocation]     = useState<any>(null);
-  const [smoothLat, setSmoothLat]   = useState(0);
-  const [smoothLng, setSmoothLng]   = useState(0);
-  const [heading, setHeading]       = useState(0);
-  const [corridas, setCorridas]     = useState<Corrida[]>([]);
+  const [location, setLocation] = useState<any>(null);
+  const [smoothLat, setSmoothLat] = useState(0);
+  const [smoothLng, setSmoothLng] = useState(0);
+  const [heading, setHeading] = useState(0);
+  const [corridas, setCorridas] = useState<Corrida[]>([]);
   const [corridaSel, setCorridaSel] = useState<Corrida | null>(null);
-  const [modo, setModo]             = useState<ModoMapa>("global");
+  const [modo, setModo] = useState<ModoMapa>("global");
   const [modalCorVisivel, setModalCorVisivel] = useState(false);
-  const [salvandoCor, setSalvandoCor]         = useState(false);
+  const [salvandoCor, setSalvandoCor] = useState(false);
 
-  const painelAnim    = useRef(new Animated.Value(0)).current;
-  const cardAnim      = useRef(new Animated.Value(300)).current;
-  const toggleAnim    = useRef(new Animated.Value(0)).current;
-  const TOGGLE_WIDTH  = 320;
-  const PILL_WIDTH    = (TOGGLE_WIDTH - 8) / 2;
+  // Animação de destaque da rota selecionada
+  const rotaDestaqueAnim = useRef(new Animated.Value(0)).current;
 
-  const kalmanLat     = useRef(new KalmanFilter());
-  const kalmanLng     = useRef(new KalmanFilter());
-  const iniciouGPS    = useRef(false);
-  const mapRef        = useRef<MapView>(null);
-  const regionTimeout = useRef<number | null>(null);
+  const painelAnim = useRef(new Animated.Value(0)).current;
+  const cardAnim = useRef(new Animated.Value(300)).current;
+  const toggleAnim = useRef(new Animated.Value(4)).current;
+  const TOGGLE_WIDTH = 320;
+  const PILL_WIDTH = (TOGGLE_WIDTH - 8) / 2;
 
-  const navigation  = useNavigation();
+  const kalmanLat = useRef(new KalmanFilter());
+  const kalmanLng = useRef(new KalmanFilter());
+  const iniciouGPS = useRef(false);
+  const mapRef = useRef<MapView>(null);
+
+  const navigation = useNavigation();
   const currentUser = getAuth().currentUser;
   const { migrarKmAntigos } = useConquistas();
-  const insets      = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
   const BOTTOM_OFFSET = TAB_BAR_HEIGHT + insets.bottom;
 
   // ── GPS ───────────────────────────────────────────────────────────────
@@ -153,8 +211,7 @@ export default function Home() {
       setLocation(pos);
       iniciouGPS.current = true;
       mapRef.current?.animateToRegion(
-        { latitude: pos.coords.latitude, longitude: pos.coords.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 },
-        600,
+        { latitude: pos.coords.latitude, longitude: pos.coords.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 }, 600,
       );
     })();
   }, []);
@@ -162,7 +219,7 @@ export default function Home() {
   useEffect(() => {
     let headingSub: Location.LocationSubscription | null = null;
     Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.Balanced, timeInterval: 4000, distanceInterval: 15 },
+      { accuracy: Location.Accuracy.Balanced, timeInterval: 5000, distanceInterval: 20 }, // menos frequente = menos travamento
       (r) => {
         setLocation(r);
         if (!iniciouGPS.current) return;
@@ -188,7 +245,7 @@ export default function Home() {
         await Promise.all(ids.map(async (uid) => {
           const snap = await getDoc(doc(db, "usuarios", uid));
           const d = snap.data();
-          perfis[uid] = { nome: d?.nome || "Corredor", avatarUrl: d?.avatarUrl, corRota: d?.corRota || COR_FALLBACK };
+          perfis[uid] = { nome: d?.nome || "Corredor", avatarUrl: d?.avatarUrl, corRota: d?.corRota || CORES.fallback };
         }));
 
         const lista: Corrida[] = [];
@@ -199,19 +256,19 @@ export default function Home() {
             if (!data.rota?.length) return;
             lista.push({
               id: d.id, uid, rota: data.rota,
-              distancia_km:     data.distancia_km    || 0,
-              tempo_formatado:  data.tempo_formatado  || "00:00",
-              pace:             data.pace             || "--:--",
-              criadoEm:         data.criadoEm,
-              nomeOriginal:     perfis[uid]?.nome     || "Corredor",
-              avatarOriginal:   perfis[uid]?.avatarUrl,
-              corOriginal:      data.corRota || perfis[uid]?.corRota || COR_FALLBACK,
-              capturadaPor:     data.capturadaPor,
+              distancia_km: data.distancia_km || 0,
+              tempo_formatado: data.tempo_formatado || "00:00",
+              pace: data.pace || "--:--",
+              criadoEm: data.criadoEm,
+              nomeOriginal: perfis[uid]?.nome || "Corredor",
+              avatarOriginal: perfis[uid]?.avatarUrl,
+              corOriginal: data.corRota || perfis[uid]?.corRota || CORES.fallback,
+              capturadaPor: data.capturadaPor,
               capturadaPorNome: data.capturadaPorNome,
-              capturadaPorCor:  data.capturadaPorCor  || COR_FALLBACK,
+              capturadaPorCor: data.capturadaPorCor || CORES.fallback,
               historicoCaptura: data.historicoCaptura || [],
-              centro:           centroDaRota(data.rota),
-              fechada:          isAreaFechada(data.rota),
+              centro: centroDaRota(data.rota),
+              fechada: isAreaFechada(data.rota),
             });
           });
         }));
@@ -227,16 +284,14 @@ export default function Home() {
     })();
   }, [currentUser]);
 
-  // ── Badge "disputado" — só para uso no card, não filtra corridas ──────
-  // Corridas com intersecção com OUTRAS corridas de outros usuários
+  // ── Badge disputado ───────────────────────────────────────────────────
   const idsDisputados = useMemo<Set<string>>(() => {
     const s = new Set<string>();
     for (let i = 0; i < corridas.length; i++) {
       for (let j = 0; j < corridas.length; j++) {
         if (i === j || corridas[i].uid === corridas[j].uid) continue;
         if (rotasSeIntersectam(corridas[i].rota, corridas[j].rota)) {
-          s.add(corridas[i].id);
-          s.add(corridas[j].id);
+          s.add(corridas[i].id); s.add(corridas[j].id);
         }
       }
     }
@@ -244,24 +299,20 @@ export default function Home() {
   }, [corridas]);
 
   // ── Corridas visíveis ─────────────────────────────────────────────────
-  // GLOBAL: todas as corridas (cor do dominador atual)
-  // MINHAS: apenas as minhas (cor original sempre)
   const corridasGlobal = useMemo(() => corridas, [corridas]);
-
   const corridasMinhas = useMemo(
     () => currentUser ? corridas.filter((c) => c.uid === currentUser.uid) : [],
     [corridas, currentUser],
   );
-
   const corridasVisiveis = modo === "global" ? corridasGlobal : corridasMinhas;
 
   // ── Ranking ───────────────────────────────────────────────────────────
   const ranking = useMemo(() => {
     const mapa: Record<string, { nome: string; cor: string; total: number }> = {};
     corridas.forEach((c) => {
-      const uid  = c.capturadaPor  || c.uid;
+      const uid = c.capturadaPor || c.uid;
       const nome = c.capturadaPorNome || c.nomeOriginal;
-      const cor  = c.capturadaPorCor  || c.corOriginal;
+      const cor = c.capturadaPorCor || c.corOriginal;
       if (!mapa[uid]) mapa[uid] = { nome, cor, total: 0 };
       mapa[uid].total++;
     });
@@ -271,10 +322,39 @@ export default function Home() {
       .slice(0, 5);
   }, [corridas]);
 
-  // ── Card ──────────────────────────────────────────────────────────────
+  // ── Cor da corrida ────────────────────────────────────────────────────
+  // Regras de cores:
+  // - Minha rota, ninguém capturou → cor do usuário
+  // - Minha rota, alguém capturou → VERMELHO (perdi)
+  // - Rota de outro, capturada por mim → VERDE (dominando)
+  // - Rota de outro, não capturada → DOURADO
+  const corDaCorrida = useCallback((c: Corrida): string => {
+    if (modo === "minhas") return c.corOriginal;
+    const foiCapturada = c.capturadaPor && c.capturadaPor !== c.uid;
+    const euCapturei = c.capturadaPor === currentUser?.uid;
+    const ehMinha = c.uid === currentUser?.uid;
+
+    if (ehMinha && foiCapturada) return CORES.vermelho;  // perdi meu território
+    if (euCapturei) return CORES.verde;     // dominando território alheio
+    if (foiCapturada) return CORES.dourado;   // capturada por outro
+    return c.corOriginal;
+  }, [modo, currentUser]);
+
+  // ── Abrir card com animação ───────────────────────────────────────────
   const abrirCard = useCallback((corrida: Corrida) => {
     setCorridaSel(corrida);
-    Animated.spring(cardAnim, { toValue: 0, useNativeDriver: true }).start();
+    // Anima entrada do card
+    Animated.spring(cardAnim, { toValue: 0, useNativeDriver: true, tension: 80, friction: 12 }).start();
+    // Pulsa a rota selecionada
+    Animated.sequence([
+      Animated.timing(rotaDestaqueAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.timing(rotaDestaqueAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
+      Animated.timing(rotaDestaqueAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+    ]).start();
+    // Centraliza no mapa
+    mapRef.current?.animateToRegion(
+      { latitude: corrida.centro.latitude, longitude: corrida.centro.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 400,
+    );
   }, []);
 
   const fecharCard = useCallback(() => {
@@ -290,7 +370,7 @@ export default function Home() {
     Animated.spring(painelAnim, { toValue: m === "minhas" ? 1 : 0, tension: 60, friction: 14, useNativeDriver: false }).start();
   }
 
-  // ── Paleta de cores ───────────────────────────────────────────────────
+  // ── Salvar cor ────────────────────────────────────────────────────────
   async function salvarCorCorrida(novaCor: string) {
     if (!corridaSel || !currentUser) return;
     setSalvandoCor(true);
@@ -303,59 +383,61 @@ export default function Home() {
     finally { setSalvandoCor(false); setModalCorVisivel(false); }
   }
 
-  // ── Cor da corrida por modo ───────────────────────────────────────────
-  const corDaCorrida = useCallback((c: Corrida): string => {
-    if (modo === "minhas") return c.corOriginal;
-    return c.capturadaPor ? (c.capturadaPorCor || COR_FALLBACK) : c.corOriginal;
-  }, [modo]);
-
-  // ── Render do mapa — usa Polygon para área fechada ────────────────────
+  // ── Render do mapa ────────────────────────────────────────────────────
   const renderMapa = useMemo(() => {
     return corridasVisiveis.map((c) => {
       const cor = corDaCorrida(c);
-      // ✅ Polígono fechado → usa Polygon com preenchimento
-      if (c.fechada) {
-        return (
-          <Polygon
-            key={c.id}
-            coordinates={c.rota}
-            strokeColor={cor}
-            fillColor={`${cor}40`}
-            strokeWidth={3}
-            tappable
+      const selecionada = corridaSel?.id === c.id;
+      const largura = selecionada ? 6 : 3; // rota selecionada fica mais grossa
+
+      return (
+        <React.Fragment key={c.id}>
+          {c.fechada ? (
+            <Polygon
+              coordinates={c.rota}
+              strokeColor={cor}
+              fillColor={`${cor}40`}
+              strokeWidth={largura}
+              tappable
+              onPress={() => abrirCard(c)}
+            />
+          ) : (
+            <Polyline
+              coordinates={c.rota}
+              strokeColor={cor}
+              strokeWidth={largura}
+              tappable
+              geodesic={false}
+              lineCap="round"
+              lineJoin="round"
+              onPress={() => abrirCard(c)}
+            />
+          )}
+          {/* Avatar no meio da rota */}
+          <AvatarMarker
+            corrida={c}
+            selecionada={selecionada}
             onPress={() => abrirCard(c)}
           />
-        );
-      }
-      // Rota aberta → Polyline
-      return (
-        <Polyline
-          key={c.id}
-          coordinates={c.rota}
-          strokeColor={cor}
-          strokeWidth={3}
-          tappable
-          geodesic={false}
-          lineCap="round"
-          lineJoin="round"
-          onPress={() => abrirCard(c)}
-        />
+        </React.Fragment>
       );
     });
-  }, [corridasVisiveis, corDaCorrida, abrirCard]);
+  }, [corridasVisiveis, corDaCorrida, corridaSel, abrirCard]);
 
-  // ── Valores derivados ─────────────────────────────────────────────────
+  // ── Derivados ─────────────────────────────────────────────────────────
   const ehMinhaCorrida = corridaSel?.uid === currentUser?.uid;
+  const euCaptureiEssa = corridaSel?.capturadaPor === currentUser?.uid;
+  const elaPerdeuParaMim = corridaSel?.capturadaPor && corridaSel.capturadaPor !== corridaSel.uid;
+
   const painelBottom = painelAnim.interpolate({
-    inputRange:  [0, 1],
-    outputRange: [-PAINEL_ALTURA, BOTTOM_OFFSET],
+    inputRange: [0, 1], outputRange: [-PAINEL_ALTURA, BOTTOM_OFFSET],
   });
 
   // ─────────────────────────────────────────────────────────────────────
   return (
     <View style={StyleSheet.absoluteFill}>
 
-      {/* Mapa tela cheia */}
+      {/* Mapa */}
       {location && (
         <MapView
           ref={mapRef}
@@ -366,15 +448,12 @@ export default function Home() {
           rotateEnabled={false}
           pitchEnabled={false}
           initialRegion={{
-            latitude:  smoothLat || location.coords.latitude,
+            latitude: smoothLat || location.coords.latitude,
             longitude: smoothLng || location.coords.longitude,
             latitudeDelta: 0.005, longitudeDelta: 0.005,
           }}
-          onRegionChangeComplete={(r: Region) => {
-            if (regionTimeout.current) clearTimeout(regionTimeout.current);
-            regionTimeout.current = setTimeout(() => {}, 120);
-          }}
         >
+          {/* Marcador do usuário */}
           {smoothLat !== 0 && (
             <Marker
               coordinate={{ latitude: smoothLat, longitude: smoothLng }}
@@ -407,21 +486,39 @@ export default function Home() {
         <View style={[local.toggleContainer, { width: TOGGLE_WIDTH }]}>
           <Animated.View style={[local.togglePill, { width: PILL_WIDTH, left: toggleAnim }]} />
           <TouchableOpacity style={local.toggleBtn} onPress={() => alternarModo("global")}>
-            <Feather name="globe" size={14} color={modo === "global" ? "#fff" : "#777"} />
+            <Feather name="globe" size={14} color={modo === "global" ? CORES.branco : CORES.cinza} />
             <Text style={[local.toggleTxt, modo === "global" && local.toggleTxtActive]}>Online</Text>
           </TouchableOpacity>
           <TouchableOpacity style={local.toggleBtn} onPress={() => alternarModo("minhas")}>
-            <Feather name="user" size={14} color={modo === "minhas" ? "#fff" : "#777"} />
+            <Feather name="user" size={14} color={modo === "minhas" ? CORES.branco : CORES.cinza} />
             <Text style={[local.toggleTxt, modo === "minhas" && local.toggleTxtActive]}>Minhas corridas</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Ranking — modo global */}
+      {/* Legenda de cores — modo global */}
+      {modo === "global" && (
+        <View style={local.legendaWrap}>
+          <View style={local.legendaItem}>
+            <View style={[local.legendaDot, { backgroundColor: CORES.verde }]} />
+            <Text style={local.legendaTxt}>Dominando</Text>
+          </View>
+          <View style={local.legendaItem}>
+            <View style={[local.legendaDot, { backgroundColor: CORES.dourado }]} />
+            <Text style={local.legendaTxt}>Capturado</Text>
+          </View>
+          <View style={local.legendaItem}>
+            <View style={[local.legendaDot, { backgroundColor: CORES.vermelho }]} />
+            <Text style={local.legendaTxt}>Perdido</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Ranking */}
       {modo === "global" && ranking.length > 0 && (
         <View style={[local.rankingCard, { bottom: BOTTOM_OFFSET + 16 }]}>
           <Text style={local.rankingTitulo}>
-            <Feather name="award" size={13} color="#2C3F69" /> Dominando agora
+            <Feather name="award" size={13} color={CORES.primario} /> Dominando agora
           </Text>
           {ranking.map((r, i) => (
             <View key={r.uid} style={local.rankingRow}>
@@ -443,40 +540,61 @@ export default function Home() {
           { latitude: smoothLat, longitude: smoothLng, latitudeDelta: 0.005, longitudeDelta: 0.005 }, 500,
         )}
       >
-        <Feather name="navigation" size={20} color="#2C3F69" />
+        <Feather name="navigation" size={20} color={CORES.primario} />
       </TouchableOpacity>
 
       {/* Card da corrida */}
       {corridaSel && (
         <Animated.View style={[local.card, { bottom: BOTTOM_OFFSET + 12, transform: [{ translateY: cardAnim }] }]}>
           <TouchableOpacity style={local.cardClose} onPress={fecharCard}>
-            <Feather name="x" size={18} color="#999" />
+            <Feather name="x" size={18} color={CORES.cinza} />
           </TouchableOpacity>
 
+          {/* Header */}
           <View style={local.cardHeader}>
             {corridaSel.avatarOriginal
               ? <Image source={{ uri: corridaSel.avatarOriginal }} style={local.avatar} />
-              : <View style={[local.avatar, { backgroundColor: corridaSel.corOriginal }]} />
+              : <View style={[local.avatar, { backgroundColor: corridaSel.corOriginal, alignItems: "center", justifyContent: "center" }]}>
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 22 }}>
+                  {corridaSel.nomeOriginal.charAt(0).toUpperCase()}
+                </Text>
+              </View>
             }
             <View style={{ flex: 1 }}>
               <Text style={local.cardNome}>{corridaSel.nomeOriginal}</Text>
               <Text style={local.cardSub}>{formatDate(corridaSel.criadoEm)}</Text>
-              {/* Badge "disputado" — do primeiro código */}
+
+              {/* Badge disputado */}
               {idsDisputados.has(corridaSel.id) && (
-                <View style={local.dominadoBadge}>
-                  <View style={[local.dominadoDot, { backgroundColor: "#e9a01a" }]} />
-                  <Text style={local.dominadoTxt}>Trecho disputado com outro corredor</Text>
+                <View style={local.badge}>
+                  <View style={[local.badgeDot, { backgroundColor: CORES.laranja }]} />
+                  <Text style={[local.badgeTxt, { color: CORES.laranja }]}>Trecho disputado</Text>
                 </View>
               )}
-              {corridaSel.capturadaPor && corridaSel.capturadaPor !== corridaSel.uid && (
-                <View style={local.dominadoBadge}>
-                  <View style={[local.dominadoDot, { backgroundColor: corridaSel.capturadaPorCor }]} />
-                  <Text style={local.dominadoTxt}>Dominado por {corridaSel.capturadaPorNome}</Text>
+
+              {/* Badge perdido */}
+              {ehMinhaCorrida && elaPerdeuParaMim && (
+                <View style={local.badge}>
+                  <View style={[local.badgeDot, { backgroundColor: CORES.vermelho }]} />
+                  <Text style={[local.badgeTxt, { color: CORES.vermelho }]}>
+                    Perdido para {corridaSel.capturadaPorNome}
+                  </Text>
+                </View>
+              )}
+
+              {/* Badge capturado por outro */}
+              {!ehMinhaCorrida && elaPerdeuParaMim && !euCaptureiEssa && (
+                <View style={local.badge}>
+                  <View style={[local.badgeDot, { backgroundColor: CORES.dourado }]} />
+                  <Text style={[local.badgeTxt, { color: CORES.dourado }]}>
+                    Dominado por {corridaSel.capturadaPorNome}
+                  </Text>
                 </View>
               )}
             </View>
           </View>
 
+          {/* Métricas */}
           <View style={local.metrics}>
             <View style={local.metricBox}>
               <Text style={local.metricV}>{corridaSel.distancia_km.toFixed(2)}km</Text>
@@ -492,6 +610,22 @@ export default function Home() {
             </View>
           </View>
 
+          {/* Histórico de capturas */}
+          {corridaSel.historicoCaptura && corridaSel.historicoCaptura.length > 0 && (
+            <View style={local.historicoWrap}>
+              <Text style={local.historicoTitulo}>Histórico de domínio</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {corridaSel.historicoCaptura.map((h, i) => (
+                  <View key={i} style={local.historicoItem}>
+                    <View style={[local.historicoDot, { backgroundColor: h.cor }]} />
+                    <Text style={local.historicoNome}>{h.nome}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Botões */}
           <View style={local.botoesRow}>
             {ehMinhaCorrida ? (
               <>
@@ -499,6 +633,7 @@ export default function Home() {
                   style={[local.btnAcao, { flex: 1, marginRight: 8 }]}
                   onPress={() => { fecharCard(); router.push("../historico"); }}
                 >
+                  <Feather name="clock" size={15} color="#fff" style={{ marginRight: 6 }} />
                   <Text style={local.btnAcaoTxt}>Ver histórico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -510,22 +645,45 @@ export default function Home() {
               </>
             ) : (
               <TouchableOpacity
-                style={[local.btnAcao, { flex: 1, backgroundColor: "#e9a01a" }]}
+                style={[local.btnAcao, { flex: 1, backgroundColor: CORES.dourado }]}
                 onPress={() => {
                   fecharCard();
                   router.push({
                     pathname: "../../../telaCorrendo",
                     params: {
-                      corridaCapturarId:   corridaSel.id,
+                      corridaCapturarId: corridaSel.id,
                       corridaCapturarRota: JSON.stringify(corridaSel.rota),
-                      corridaCapturarCor:  corridaSel.corOriginal,
+                      corridaCapturarCor: corridaSel.corOriginal,
                       corridaCapturarNome: corridaSel.nomeOriginal,
                     },
                   });
                 }}
               >
-                <Feather name="flag" size={15} color="#fff" style={{ marginRight: 6 }} />
-                <Text style={local.btnAcaoTxt}>Capturar</Text>
+                <Feather name="flag" size={15} color={CORES.primario} style={{ marginRight: 6 }} />
+                <Text style={[local.btnAcaoTxt, { color: CORES.primario }]}>Capturar território</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Botão recuperar — aparece só se minha rota foi perdida */}
+            {ehMinhaCorrida && elaPerdeuParaMim && (
+              <TouchableOpacity
+                style={[local.btnAcao, { flex: 1, marginLeft: 8, backgroundColor: CORES.vermelho }]}
+                onPress={() => {
+                  fecharCard();
+                  router.push({
+                    pathname: "../../../telaCorrendo",
+                    params: {
+                      corridaCapturarId: corridaSel.id,
+                      corridaCapturarRota: JSON.stringify(corridaSel.rota),
+                      corridaCapturarCor: corridaSel.corOriginal,
+                      corridaCapturarNome: corridaSel.nomeOriginal,
+                      modoRecuperar: "true",
+                    },
+                  });
+                }}
+              >
+                <Feather name="refresh-cw" size={15} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={local.btnAcaoTxt}>Recuperar</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -551,7 +709,9 @@ export default function Home() {
                   strokeColor={c.corOriginal} fillColor={`${c.corOriginal}40`} strokeWidth={2} />
               ) : (
                 <Polyline key={c.id} coordinates={c.rota}
-                  strokeColor={c.corOriginal} strokeWidth={3} geodesic={false} lineCap="round" />
+                  strokeColor={c.capturadaPor && c.capturadaPor !== c.uid ? CORES.vermelho : c.corOriginal}
+                  strokeWidth={3} geodesic={false} lineCap="round"
+                />
               )
             )}
           </MapView>
@@ -565,7 +725,9 @@ export default function Home() {
         <ScrollView style={local.painelLista} contentContainerStyle={{ paddingBottom: 12 }} showsVerticalScrollIndicator={false}>
           {corridasMinhas.length === 0
             ? <Text style={local.painelVazio}>Nenhuma corrida ainda.</Text>
-            : corridasMinhas.map((c) => (
+            : corridasMinhas.map((c) => {
+              const perdida = c.capturadaPor && c.capturadaPor !== currentUser?.uid;
+              return (
                 <TouchableOpacity key={c.id} style={local.corridaItem}
                   onPress={() => {
                     mapRef.current?.animateToRegion(
@@ -574,19 +736,22 @@ export default function Home() {
                     abrirCard(c);
                   }}
                 >
-                  <View style={[local.corridaItemDot, { backgroundColor: c.corOriginal }]} />
+                  <View style={[local.corridaItemDot, { backgroundColor: perdida ? CORES.vermelho : c.corOriginal }]} />
                   <View style={{ flex: 1 }}>
                     <Text style={local.corridaItemData}>{formatDate(c.criadoEm)}</Text>
                     <Text style={local.corridaItemInfo}>
                       {c.distancia_km.toFixed(2)} km · {c.tempo_formatado} · {c.pace}/km
                     </Text>
-                    {c.capturadaPor && c.capturadaPor !== currentUser?.uid && (
-                      <Text style={local.corridaCapturada}>⚑ Dominada por {c.capturadaPorNome}</Text>
+                    {perdida && (
+                      <Text style={[local.corridaCapturada, { color: CORES.vermelho }]}>
+                        ⚑ Perdido para {c.capturadaPorNome}
+                      </Text>
                     )}
                   </View>
                   <Feather name="chevron-right" size={16} color="#ccc" />
                 </TouchableOpacity>
-              ))
+              );
+            })
           }
         </ScrollView>
       </Animated.View>
@@ -612,9 +777,9 @@ export default function Home() {
   );
 }
 
-// ─── Estilos ──────────────────────────────────────────────────────────────────
+// ─── Estilos ───────────────────────────────────────────────────────────────────
 const local = StyleSheet.create({
-  menuBtn:      { position: "absolute", top: 52, left: 18, zIndex: 20 },
+  menuBtn: { position: "absolute", top: 52, left: 18, zIndex: 20 },
   ofensivaWrap: { position: "absolute", top: 50, right: 18, zIndex: 20 },
 
   toggleWrap: { position: "absolute", top: 95, width: "100%", alignItems: "center", zIndex: 20 },
@@ -623,26 +788,35 @@ const local = StyleSheet.create({
     borderRadius: 18, height: 52, padding: 4, position: "relative", alignItems: "center",
     shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 6,
   },
-  togglePill:      { position: "absolute", top: 4, bottom: 4, backgroundColor: "#2C3F69", borderRadius: 14 },
-  toggleBtn:       { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 2 },
-  toggleTxt:       { fontSize: 15, fontWeight: "700", color: "#777" },
-  toggleTxtActive: { color: "#fff" },
+  togglePill: { position: "absolute", top: 4, bottom: 4, backgroundColor: CORES.primario, borderRadius: 14 },
+  toggleBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 2 },
+  toggleTxt: { fontSize: 15, fontWeight: "700", color: CORES.cinza },
+  toggleTxtActive: { color: CORES.branco },
+
+  legendaWrap: {
+    position: "absolute", top: 158, alignSelf: "center", flexDirection: "row", gap: 12,
+    backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 6,
+    shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 6, elevation: 3, zIndex: 19,
+  },
+  legendaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  legendaDot: { width: 10, height: 10, borderRadius: 5 },
+  legendaTxt: { fontSize: 11, fontWeight: "600", color: "#444" },
 
   rankingCard: {
     position: "absolute", left: 16, right: 16,
     backgroundColor: "rgba(255,255,255,0.96)", borderRadius: 20, padding: 14,
     shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 6, zIndex: 20,
   },
-  rankingTitulo: { fontSize: 13, fontWeight: "800", color: "#2C3F69", marginBottom: 10 },
-  rankingRow:    { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  rankingPos:    { fontSize: 12, fontWeight: "700", color: "#999", width: 28 },
-  rankingDot:    { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
-  rankingNome:   { flex: 1, fontSize: 13, fontWeight: "700", color: "#222" },
-  rankingTotal:  { fontSize: 12, color: "#888", fontWeight: "600" },
+  rankingTitulo: { fontSize: 13, fontWeight: "800", color: CORES.primario, marginBottom: 10 },
+  rankingRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
+  rankingPos: { fontSize: 12, fontWeight: "700", color: CORES.cinza, width: 28 },
+  rankingDot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
+  rankingNome: { flex: 1, fontSize: 13, fontWeight: "700", color: "#222" },
+  rankingTotal: { fontSize: 12, color: "#888", fontWeight: "600" },
 
   btnCentralizar: {
     position: "absolute", right: 16, width: 54, height: 54, borderRadius: 27,
-    backgroundColor: "#fff", alignItems: "center", justifyContent: "center", zIndex: 20,
+    backgroundColor: CORES.branco, alignItems: "center", justifyContent: "center", zIndex: 20,
     shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 6,
   },
 
@@ -651,57 +825,73 @@ const local = StyleSheet.create({
     position: "absolute", top: 0, width: 0, height: 0,
     borderLeftWidth: 6, borderRightWidth: 6, borderBottomWidth: 12,
     borderLeftColor: "transparent", borderRightColor: "transparent",
-    borderBottomColor: "#2C3F69", opacity: 0.85,
+    borderBottomColor: CORES.primario, opacity: 0.85,
   },
-  userDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: "#2C3F69", borderWidth: 3, borderColor: "#fff", marginTop: 6 },
+  userDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: CORES.primario, borderWidth: 3, borderColor: CORES.branco, marginTop: 6 },
+
+  avatarMarkerWrap: {
+    width: 36, height: 36, borderRadius: 18, borderWidth: 3,
+    overflow: "hidden", backgroundColor: CORES.branco,
+    shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 4, elevation: 5,
+  },
+  avatarMarkerImg: { width: "100%", height: "100%" },
+  avatarMarkerPlaceholder: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
+  avatarMarkerLetra: { color: CORES.branco, fontWeight: "800", fontSize: 16 },
 
   card: {
     position: "absolute", left: 16, right: 16,
     backgroundColor: "rgba(255,255,255,0.97)", borderRadius: 28, padding: 20, zIndex: 30,
     shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 10,
   },
-  cardClose:      { position: "absolute", top: 16, right: 16, zIndex: 2 },
-  cardHeader:     { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  avatar:         { width: 54, height: 54, borderRadius: 27, marginRight: 14 },
-  cardNome:       { fontSize: 22, fontWeight: "800", color: "#111" },
-  cardSub:        { fontSize: 13, color: "#777", marginTop: 4 },
-  dominadoBadge:  { flexDirection: "row", alignItems: "center", marginTop: 6 },
-  dominadoDot:    { width: 8, height: 8, borderRadius: 4, marginRight: 5 },
-  dominadoTxt:    { fontSize: 12, color: "#e9a01a", fontWeight: "700" },
+  cardClose: { position: "absolute", top: 16, right: 16, zIndex: 2 },
+  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  avatar: { width: 54, height: 54, borderRadius: 27, marginRight: 14 },
+  cardNome: { fontSize: 22, fontWeight: "800", color: "#111" },
+  cardSub: { fontSize: 13, color: CORES.cinza, marginTop: 4 },
 
-  metrics:   { flexDirection: "row", justifyContent: "space-between" },
+  badge: { flexDirection: "row", alignItems: "center", marginTop: 5 },
+  badgeDot: { width: 8, height: 8, borderRadius: 4, marginRight: 5 },
+  badgeTxt: { fontSize: 12, fontWeight: "700" },
+
+  metrics: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
   metricBox: { alignItems: "center", flex: 1 },
-  metricV:   { fontSize: 22, fontWeight: "800", color: "#111" },
-  metricL:   { marginTop: 6, fontSize: 12, color: "#888" },
+  metricV: { fontSize: 22, fontWeight: "800", color: "#111" },
+  metricL: { marginTop: 4, fontSize: 12, color: "#888" },
 
-  botoesRow: { flexDirection: "row", alignItems: "center", marginTop: 22 },
-  btnAcao:   { height: 52, borderRadius: 14, backgroundColor: "#2C3F69", alignItems: "center", justifyContent: "center", flexDirection: "row" },
-  btnAcaoTxt:{ color: "#fff", fontSize: 15, fontWeight: "700" },
-  btnCor:    { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  historicoWrap: { backgroundColor: CORES.fundo, borderRadius: 12, padding: 10, marginBottom: 12 },
+  historicoTitulo: { fontSize: 11, fontWeight: "700", color: CORES.cinza, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
+  historicoItem: { flexDirection: "row", alignItems: "center", marginRight: 12, backgroundColor: CORES.branco, borderRadius: 8, padding: 6 },
+  historicoDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+  historicoNome: { fontSize: 12, fontWeight: "600", color: "#333" },
+
+  botoesRow: { flexDirection: "row", alignItems: "center" },
+  btnAcao: { height: 52, borderRadius: 14, backgroundColor: CORES.primario, alignItems: "center", justifyContent: "center", flexDirection: "row" },
+  btnAcaoTxt: { color: CORES.branco, fontSize: 15, fontWeight: "700" },
+  btnCor: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center", marginLeft: 8 },
 
   painel: {
-    position: "absolute", left: 0, right: 0, backgroundColor: "#fff",
+    position: "absolute", left: 0, right: 0, backgroundColor: CORES.branco,
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
     shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 20, shadowOffset: { width: 0, height: -4 },
     elevation: 20, zIndex: 25, overflow: "hidden",
   },
-  painelMapa:         { height: 160, width: "100%", backgroundColor: "#e8f0fe" },
-  painelMapaBadge:    { position: "absolute", top: 10, right: 10, backgroundColor: "rgba(44,63,105,0.85)", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  painelMapaBadgeTxt: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  painelLista:        { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
-  painelVazio:        { textAlign: "center", color: "#aaa", marginTop: 20, fontSize: 14 },
+  painelMapa: { height: 160, width: "100%", backgroundColor: "#e8f0fe" },
+  painelMapaBadge: { position: "absolute", top: 10, right: 10, backgroundColor: "rgba(44,63,105,0.85)", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  painelMapaBadgeTxt: { color: CORES.branco, fontSize: 12, fontWeight: "700" },
+  painelLista: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
+  painelVazio: { textAlign: "center", color: "#aaa", marginTop: 20, fontSize: 14 },
 
-  corridaItem:      { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
-  corridaItemDot:   { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
-  corridaItemData:  { fontSize: 14, fontWeight: "700", color: "#111" },
-  corridaItemInfo:  { fontSize: 12, color: "#888", marginTop: 2 },
-  corridaCapturada: { fontSize: 11, color: "#e9a01a", fontWeight: "700", marginTop: 2 },
+  corridaItem: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: CORES.bordaSutil },
+  corridaItemDot: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
+  corridaItemData: { fontSize: 14, fontWeight: "700", color: "#111" },
+  corridaItemInfo: { fontSize: 12, color: "#888", marginTop: 2 },
+  corridaCapturada: { fontSize: 11, fontWeight: "700", marginTop: 2 },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center" },
-  modalBox:     { backgroundColor: "#fff", borderRadius: 24, padding: 24, width: 300, alignItems: "center", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 20, elevation: 12 },
-  modalTitulo:  { fontSize: 18, fontWeight: "800", color: "#111", marginBottom: 20 },
-  paletaGrid:   { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 12 },
-  paletaItem:   { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: "transparent" },
-  paletaItemSel:{ borderColor: "#111", transform: [{ scale: 1.18 }] },
-  salvando:     { marginTop: 16, fontSize: 13, color: "#888" },
+  modalBox: { backgroundColor: CORES.branco, borderRadius: 24, padding: 24, width: 300, alignItems: "center" },
+  modalTitulo: { fontSize: 18, fontWeight: "800", color: "#111", marginBottom: 20 },
+  paletaGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 12 },
+  paletaItem: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: "transparent" },
+  paletaItemSel: { borderColor: "#111", transform: [{ scale: 1.18 }] },
+  salvando: { marginTop: 16, fontSize: 13, color: "#888" },
 });

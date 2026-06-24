@@ -14,7 +14,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.runcap.app"
+      "bundleIdentifier": "com.runcap.app",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "O runCap precisa da sua localização para narrar pontos turísticos mesmo com a tela bloqueada.",
+        "NSLocationWhenInUseUsageDescription": "O runCap usa sua localização para registrar sua corrida.",
+        "UIBackgroundModes": [
+          "location",
+          "audio"
+        ]
+      }
     },
     "android": {
       "package": "com.runcap.app",
@@ -23,10 +31,17 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyAKJrk8lYlpZ6Rk_j3DEtpaehtrFSqtCTg"
-        }
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "config": {
+      "googleMaps": {
+        "apiKey": "AIzaSyAKJrk8lYlpZ6Rk_j3DEtpaehtrFSqtCTg"
       }
     },
     "web": {
@@ -36,7 +51,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "O runCap precisa da sua localização para narrar pontos turísticos mesmo com a tela bloqueada.",
+          "locationWhenInUsePermission": "O runCap usa sua localização para registrar sua corrida.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
