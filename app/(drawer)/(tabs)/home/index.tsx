@@ -164,12 +164,10 @@ export default function Home() {
   const insets      = useSafeAreaInsets();
   const BOTTOM_OFFSET = TAB_BAR_HEIGHT + insets.bottom;
 
-  // Verifica conquistas ao abrir o app
   useEffect(() => {
     if (currentUser?.uid) migrarKmAntigos(currentUser.uid);
   }, []);
 
-  // GPS inicial
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -187,7 +185,6 @@ export default function Home() {
     })();
   }, []);
 
-  // GPS contínuo
   useEffect(() => {
     let headingSub: Location.LocationSubscription | null = null;
     Location.watchPositionAsync(
@@ -204,21 +201,20 @@ export default function Home() {
     return () => { headingSub?.remove(); };
   }, []);
 
-  // ✅ CORRIGIDO: busca TODAS as corridas, não só de amigos
   useEffect(() => {
     if (!currentUser) return;
     (async () => {
       try {
-        // Busca todas as corridas do banco
         const corridasSnap = await getDocs(collection(db, "corridas"));
 
-        // Coleta UIDs únicos para buscar perfis
         const uidsUnicos = new Set<string>();
         corridasSnap.forEach(d => {
-          if (d.data().rota?.length) uidsUnicos.add(d.data().uid);
+          const data = d.data();
+          if (Array.isArray(data.rota) && data.rota.length >= 2 && data.uid) {
+            uidsUnicos.add(data.uid);
+          }
         });
 
-        // Busca perfil de cada corredor
         const perfis: Record<string, { nome: string; avatarUrl?: string; corRota: string }> = {};
         await Promise.all(Array.from(uidsUnicos).map(async (uid) => {
           const snap = await getDoc(doc(db, "usuarios", uid));
@@ -230,14 +226,22 @@ export default function Home() {
           };
         }));
 
-        // Monta lista final
         const lista: Corrida[] = [];
         corridasSnap.forEach((d) => {
           const data = d.data();
-          if (!data.rota?.length) return;
+
+          // Validação robusta — ignora corridas com rota inválida
+          if (!Array.isArray(data.rota) || data.rota.length < 2) return;
+          if (!data.uid) return;
+
+          const rota: Coord[] = data.rota.filter(
+            (c: any) => c && typeof c.latitude === "number" && typeof c.longitude === "number"
+          );
+          if (rota.length < 2) return;
+
           const uid = data.uid;
           lista.push({
-            id: d.id, uid, rota: data.rota,
+            id: d.id, uid, rota,
             distancia_km: data.distancia_km || 0,
             tempo_formatado: data.tempo_formatado || "00:00",
             pace: data.pace || "--:--",
@@ -249,8 +253,8 @@ export default function Home() {
             capturadaPorNome: data.capturadaPorNome,
             capturadaPorCor: data.capturadaPorCor || CORES.fallback,
             historicoCaptura: data.historicoCaptura || [],
-            centro: centroDaRota(data.rota),
-            fechada: isAreaFechada(data.rota),
+            centro: centroDaRota(rota),
+            fechada: isAreaFechada(rota),
           });
         });
 
