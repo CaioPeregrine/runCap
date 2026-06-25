@@ -101,7 +101,7 @@ export default function Login() {
       </View>
 
       <View style={styles.BK2}>
-        <Text style={styles.label}>Bem-vindo ao RunCap!</Text>
+        <Text style={styles.label}>Bem-vindo ao runCap!</Text>
         <Text style={styles.subLabel}>Entre na sua conta para continuar</Text>
 
         <View style={styles.input}>

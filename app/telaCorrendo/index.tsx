@@ -2,22 +2,21 @@ import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
 import { getAuth } from "firebase/auth";
 import {
-    addDoc,
-    collection,
-    doc, getDoc,
-    serverTimestamp,
-    updateDoc,
+    addDoc, collection, doc, getDoc,
+    serverTimestamp, updateDoc,
 } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { db } from "../../firebase/firebaseConfig";
 import { useConquistas } from "../hooks/useConquistas";
+import {
+    resetarPontosNarrados,
+    setPontoDetectadoCallback,
+    startAudioGuide,
+    stopAudioGuide,
+} from "../services/audioGuideService";
 import styles from "./styles";
-
-const API_URL = "runcapapi-production.up.railway.app";
-
-const { verificarConquistas } = useConquistas();
 
 type Coord = { latitude: number; longitude: number };
 type RunStatus = "running" | "paused";
@@ -58,22 +57,22 @@ async function atualizarSequencia(uid: string) {
         const uSnap = await getDoc(uRef);
         const data = uSnap.data();
         if (!data) return;
-
         const hoje = dataHoje();
         const diasCorridos: string[] = data.diasCorridos ?? [];
         if (diasCorridos.includes(hoje)) return;
-
         const ontem = new Date();
         ontem.setDate(ontem.getDate() - 1);
         const ontemStr = ontem.toISOString().split("T")[0];
         const correuOntem = diasCorridos.includes(ontemStr);
+<<<<<<< HEAD
         const sequenciaQuebrada: boolean = data.sequenciaQuebrada ?? false;
 
+=======
+>>>>>>> d5d350162f69f46a05beb36ff728b1c2c1fc6755
         const sequenciaAtual: number = data.sequenciaAtual ?? 0;
         const novaSequencia = correuOntem && !sequenciaQuebrada ? sequenciaAtual + 1 : 1;
         const maiorSequencia: number = data.maiorSequencia ?? 0;
         const novaMaior = Math.max(maiorSequencia, novaSequencia);
-
         await updateDoc(uRef, {
             diasCorridos: [...diasCorridos, hoje],
             sequenciaAtual: novaSequencia,
@@ -106,16 +105,19 @@ async function resetSequenciaAbandonada(uid: string) {
 }
 
 export default function Correndo() {
-    // ── Params recebidos do mapaPonto ────────────────────────────────────────
+    const { verificarConquistasPorNivel } = useConquistas();
     const params = useLocalSearchParams();
 
+    // ── Params do destino (ponto turístico) ───────────────────────────────────
     const parsedPontoLat = params.pontoLat ? parseFloat(params.pontoLat as string) : Number.NaN;
     const parsedPontoLng = params.pontoLng ? parseFloat(params.pontoLng as string) : Number.NaN;
-    const pontoDestino: Coord | null = Number.isFinite(parsedPontoLat) && Number.isFinite(parsedPontoLng)
-        ? { latitude: parsedPontoLat, longitude: parsedPontoLng }
-        : null;
+    const pontoDestino: Coord | null =
+        Number.isFinite(parsedPontoLat) && Number.isFinite(parsedPontoLng)
+            ? { latitude: parsedPontoLat, longitude: parsedPontoLng }
+            : null;
     const pontoNome = (params.pontoNome as string) ?? "";
 
+    // ── Rota guia (ponto turístico ou captura de território) ──────────────────
     const rotaGuia: Coord[] = params.rotaEncodada
         ? JSON.parse(params.rotaEncodada as string)
         : [];
@@ -123,19 +125,40 @@ export default function Correndo() {
         (c): c is Coord => c != null && Number.isFinite(c.latitude) && Number.isFinite(c.longitude)
     );
 
-    // ── Estados da corrida ───────────────────────────────────────────────────
-    const [location, setLocation] = useState<any>(null);
-    const [filteredLocation, setFilteredLocation] = useState<any>(null);
-    const [routeCoords, setRouteCoords] = useState<Coord[]>([]);
-    const [status, setStatus] = useState<RunStatus>("running");
-    const [elapsedSeconds, setElapsedSeconds] = useState(0);
-    const [distanceMeters, setDistanceMeters] = useState(0);
-    const [saving, setSaving] = useState(false);
-    const [distRestante, setDistRestante] = useState<number | null>(null);
+    // ── Params de captura/recuperação de território ───────────────────────────
+    const corridaCapturarId   = (params.corridaCapturarId as string)   ?? null;
+    const corridaCapturarNome = (params.corridaCapturarNome as string) ?? "";
+    const corridaCapturarCor  = (params.corridaCapturarCor as string)  ?? "#FFD700";
+    const modoRecuperar       = params.modoRecuperar === "true";
 
-    // ── Heading suavizado tipo Uber ──────────────────────────────────────────
-    const [smoothHeading, setSmoothHeading] = useState(0);
+    // Rota do território a capturar (tracejado dourado/vermelho)
+    const rotaCapturar: Coord[] = params.corridaCapturarRota
+        ? JSON.parse(params.corridaCapturarRota as string)
+        : [];
+    const rotaCapturarValid = rotaCapturar.filter(
+        (c): c is Coord => c != null && Number.isFinite(c.latitude) && Number.isFinite(c.longitude)
+    );
+
+    // Cor do tracejado: vermelho para recuperar, dourado para capturar
+    const corTracejadoCaptura = modoRecuperar ? "#FF3B30" : "#FFD700";
+
+    // ── Estados ───────────────────────────────────────────────────────────────
+    const [filteredLocation, setFilteredLocation] = useState<any>(null);
+    const [routeCoords, setRouteCoords]           = useState<Coord[]>([]);
+    const [status, setStatus]                     = useState<RunStatus>("running");
+    const [elapsedSeconds, setElapsedSeconds]     = useState(0);
+    const [distanceMeters, setDistanceMeters]     = useState(0);
+    const [saving, setSaving]                     = useState(false);
+    const [distRestante, setDistRestante]         = useState<number | null>(null);
+    const [smoothHeading, setSmoothHeading]       = useState(0);
+    const [pontoAtivo, setPontoAtivo]             = useState<string | null>(null);
+
+    const mapRef         = useRef<MapView>(null);
+    const timerRef       = useRef<ReturnType<typeof setInterval> | null>(null);
+    const statusRef      = useRef<RunStatus>("running");
+    const distanceRef    = useRef(0);
     const smoothHeadingRef = useRef(0);
+<<<<<<< HEAD
 
     // IA
     const [iaMsg, setIaMsg] = useState<string>("");
@@ -148,100 +171,75 @@ export default function Correndo() {
     const distanceRef = useRef(0);
     const lastNarratedKm = useRef(0);
 
+=======
+>>>>>>> d5d350162f69f46a05beb36ff728b1c2c1fc6755
     statusRef.current = status;
 
-    async function narrarPonto(coord: Coord, distanciaAtualM: number) {
-        try {
-            setIaLoading(true);
-            let nomePonto = "Manaus";
-            try {
-                const [geo] = await Location.reverseGeocodeAsync(coord);
-                nomePonto = geo?.street || geo?.district || geo?.city || "Manaus";
-            } catch (_) { }
+    // ── Audio guide ───────────────────────────────────────────────────────────
+    useEffect(() => {
+        setPontoDetectadoCallback((nome) => {
+            setPontoAtivo(nome);
+            setTimeout(() => setPontoAtivo(null), 8000);
+        });
+        startAudioGuide().catch((e) => console.warn("[Correndo] AudioGuide:", e));
+        return () => { stopAudioGuide().catch(() => {}); };
+    }, []);
 
-            const response = await fetch(`${API_URL}/narrar`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ponto: nomePonto,
-                    distancia: (distanciaAtualM / 1000).toFixed(2),
-                }),
-            });
-            const data = await response.json();
-            setIaMsg(data.mensagem ?? "Continue assim! 💪");
-        } catch (e) {
-            console.warn("Erro ao narrar:", e);
-        } finally {
-            setIaLoading(false);
-        }
-    }
-
-    // Timer
+    // ── Timer ─────────────────────────────────────────────────────────────────
     useEffect(() => {
         timerRef.current = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, []);
 
-    // Posição inicial
+    // ── Posição inicial ───────────────────────────────────────────────────────
     useEffect(() => {
         (async () => {
             const { status: perm } = await Location.requestForegroundPermissionsAsync();
             if (perm === "granted") {
                 const pos = await Location.getCurrentPositionAsync({});
-                setLocation(pos);
                 setFilteredLocation(pos);
+                // Se tem rota de captura, ajusta câmera para mostrar tudo
+                if (rotaCapturarValid.length > 1) {
+                    setTimeout(() => {
+                        mapRef.current?.fitToCoordinates(
+                            [{ latitude: pos.coords.latitude, longitude: pos.coords.longitude }, ...rotaCapturarValid],
+                            { edgePadding: { top: 80, right: 60, bottom: 260, left: 60 }, animated: true }
+                        );
+                    }, 600);
+                }
             }
         })();
     }, []);
 
-    // ── Bússola com interpolação suave tipo Uber ─────────────────────────────
+    // ── Bússola suavizada ─────────────────────────────────────────────────────
     useEffect(() => {
         let subscription: Location.LocationSubscription | null = null;
         (async () => {
             subscription = await Location.watchHeadingAsync((headingData) => {
-                const graus = headingData.trueHeading >= 0
-                    ? headingData.trueHeading
-                    : headingData.magHeading;
-
-                // Pega o caminho mais curto entre os ângulos (ex: 350° → 10° = +20°, não -340°)
+                const graus = headingData.trueHeading >= 0 ? headingData.trueHeading : headingData.magHeading;
                 const diff = graus - smoothHeadingRef.current;
                 const shortestDiff = ((diff + 540) % 360) - 180;
-
-                // Interpola 15% da diferença por update — movimento fluido e gradual
                 const novoHeading = smoothHeadingRef.current + shortestDiff * 0.15;
-
                 smoothHeadingRef.current = novoHeading;
                 setSmoothHeading(novoHeading);
-
                 mapRef.current?.animateCamera({ heading: novoHeading, pitch: 60 });
             });
         })();
         return () => subscription?.remove();
     }, []);
 
-    // Rastreamento GPS
+    // ── GPS ───────────────────────────────────────────────────────────────────
     useEffect(() => {
         Location.watchPositionAsync(
             { accuracy: Location.Accuracy.Highest, timeInterval: 1000, distanceInterval: 1 },
             (response) => {
-                setLocation(response);
-
-                if (!filteredLocation ||
-                    haversineDistance(response.coords, filteredLocation.coords) >= 2) {
+                if (!filteredLocation || haversineDistance(response.coords, filteredLocation.coords) >= 2) {
                     setFilteredLocation(response);
                     mapRef.current?.animateCamera({ center: response.coords, pitch: 60 });
                 }
-
                 if (statusRef.current === "running") {
-                    const newCoord: Coord = {
-                        latitude: response.coords.latitude,
-                        longitude: response.coords.longitude,
-                    };
-
-                    if (pontoDestino) {
-                        setDistRestante(haversineDistance(newCoord, pontoDestino));
-                    }
-
+                    const newCoord: Coord = { latitude: response.coords.latitude, longitude: response.coords.longitude };
+                    if (pontoDestino) setDistRestante(haversineDistance(newCoord, pontoDestino));
                     setRouteCoords((prev) => {
                         if (prev.length > 0) {
                             const extra = haversineDistance(prev[prev.length - 1], newCoord);
@@ -249,13 +247,6 @@ export default function Correndo() {
                                 const novaDistancia = distanceRef.current + extra;
                                 distanceRef.current = novaDistancia;
                                 setDistanceMeters(novaDistancia);
-
-                                const kmAtual = Math.floor(novaDistancia / 1000);
-                                if (kmAtual > lastNarratedKm.current) {
-                                    lastNarratedKm.current = kmAtual;
-                                    narrarPonto(newCoord, novaDistancia);
-                                }
-
                                 return [...prev, newCoord];
                             }
                             return prev;
@@ -268,37 +259,37 @@ export default function Correndo() {
         );
     }, []);
 
+    // ── Pause / Retomar ───────────────────────────────────────────────────────
     function handlePauseResume() {
         if (status === "running") {
             setStatus("paused");
+            stopAudioGuide();
             if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
         } else {
             setStatus("running");
+            resetarPontosNarrados();
+            startAudioGuide();
             timerRef.current = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
         }
     }
 
-async function handleFinish() {
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    setSaving(true);
-    try {
-        const uid = getAuth().currentUser?.uid;
-        if (!uid) { Alert.alert("Erro", "Usuário não autenticado."); return; }
+    // ── Finalizar ─────────────────────────────────────────────────────────────
+    async function handleFinish() {
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+        await stopAudioGuide();
+        setSaving(true);
+        try {
+            const uid = getAuth().currentUser?.uid;
+            if (!uid) { Alert.alert("Erro", "Usuário não autenticado."); return; }
 
-        const pace = calcPace(distanceMeters, elapsedSeconds);
+            const userSnap = await getDoc(doc(db, "usuarios", uid));
+            const userData = userSnap.data();
+            const nomeUsuario = userData?.nome || "Corredor";
+            const corUsuario  = userData?.corRota || "#1a58e9";
 
-        await addDoc(collection(db, "corridas"), {
-            uid,
-            distancia_m: distanceMeters,
-            distancia_km: parseFloat((distanceMeters / 1000).toFixed(3)),
-            duracao_min: Math.floor(elapsedSeconds / 60),
-            tempo_s: elapsedSeconds,
-            tempo_formatado: formatTime(elapsedSeconds),
-            pace,
-            rota: routeCoords,
-            criadoEm: serverTimestamp(),
-        });
+            const pace = calcPace(distanceMeters, elapsedSeconds);
 
+<<<<<<< HEAD
         await atualizarSequencia(uid);
         corridaFinalizadaRef.current = true;
 
@@ -314,18 +305,21 @@ async function handleFinish() {
             pathname: "./corridaConcluida",
             params: {
                 distancia_km: (distanceMeters / 1000).toFixed(2),
+=======
+            await addDoc(collection(db, "corridas"), {
+                uid,
+                distancia_m:     distanceMeters,
+                distancia_km:    parseFloat((distanceMeters / 1000).toFixed(3)),
+                duracao_min:     Math.floor(elapsedSeconds / 60),
+                tempo_s:         elapsedSeconds,
+>>>>>>> d5d350162f69f46a05beb36ff728b1c2c1fc6755
                 tempo_formatado: formatTime(elapsedSeconds),
                 pace,
-                rota: JSON.stringify(routeCoords),
-            },
-        });
-    } catch (e) {
-        Alert.alert("Erro ao salvar", String(e));
-    } finally {
-        setSaving(false);
-    }
-}
+                rota:            routeCoords,
+                criadoEm:        serverTimestamp(),
+            });
 
+<<<<<<< HEAD
 async function handleAbandonarCorrida() {
     const uid = getAuth().currentUser?.uid;
     if (!uid) return;
@@ -342,12 +336,68 @@ async function handleAbandonarCorrida() {
         };
     }, []);
 
+=======
+            // Se estava capturando/recuperando um território, atualiza no Firestore
+            if (corridaCapturarId) {
+                const corridaRef = doc(db, "corridas", corridaCapturarId);
+                const corridaSnap = await getDoc(corridaRef);
+                const corridaData = corridaSnap.data();
+                const historicoAtual = corridaData?.historicoCaptura ?? [];
+
+                await updateDoc(corridaRef, {
+                    capturadaPor:     uid,
+                    capturadaPorNome: nomeUsuario,
+                    capturadaPorCor:  corUsuario,
+                    historicoCaptura: [
+                        ...historicoAtual,
+                        { uid, nome: nomeUsuario, cor: corUsuario, data: new Date().toISOString() },
+                    ],
+                });
+            }
+
+            await atualizarSequencia(uid);
+const nivelAtual = userSnap.data()?.nivel ?? 1;
+await verificarConquistasPorNivel(uid, nivelAtual)
+            router.replace({
+                pathname: "./corridaConcluida",
+                params: {
+                    distancia_km:    (distanceMeters / 1000).toFixed(2),
+                    tempo_formatado: formatTime(elapsedSeconds),
+                    pace,
+                    rota:            JSON.stringify(routeCoords),
+                },
+            });
+        } catch (e) {
+            Alert.alert("Erro ao salvar", String(e));
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────────
+>>>>>>> d5d350162f69f46a05beb36ff728b1c2c1fc6755
     return (
         <View style={styles.container}>
-            
+
+            {/* Status */}
             <Text style={[styles.statusText, { top: 40, right: 0, zIndex: 10, alignItems: "center", fontSize: 18, fontWeight: "600", color: "#000000" }]}>
                 {status === "running" ? " Correndo…" : " Pausado"}
             </Text>
+
+            {/* Banner de captura/recuperação */}
+            {corridaCapturarId && (
+                <View style={{
+                    position: "absolute", top: 36, alignSelf: "center", zIndex: 15,
+                    backgroundColor: modoRecuperar ? "#FF3B30" : "#FFD700",
+                    borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6,
+                    flexDirection: "row", alignItems: "center", gap: 6,
+                }}>
+                    <Feather name={modoRecuperar ? "refresh-cw" : "flag"} size={13} color={modoRecuperar ? "#fff" : "#2C3F69"} />
+                    <Text style={{ color: modoRecuperar ? "#fff" : "#2C3F69", fontWeight: "700", fontSize: 12 }}>
+                        {modoRecuperar ? `Recuperando: ${corridaCapturarNome}` : `Capturando: ${corridaCapturarNome}`}
+                    </Text>
+                </View>
+            )}
 
             {filteredLocation && (
                 <MapView
@@ -356,25 +406,22 @@ async function handleAbandonarCorrida() {
                     rotateEnabled
                     pitchEnabled
                     initialRegion={{
-                        latitude: filteredLocation.coords.latitude,
+                        latitude:  filteredLocation.coords.latitude,
                         longitude: filteredLocation.coords.longitude,
                         latitudeDelta: 0.005,
                         longitudeDelta: 0.005,
                     }}
                 >
-                    {/* Marcador do usuário com heading suavizado tipo Uber */}
+                    {/* Marcador do usuário */}
                     <Marker
-                        coordinate={{
-                            latitude: filteredLocation.coords.latitude,
-                            longitude: filteredLocation.coords.longitude,
-                        }}
+                        coordinate={{ latitude: filteredLocation.coords.latitude, longitude: filteredLocation.coords.longitude }}
                         anchor={{ x: 0.5, y: 0.5 }}
                         flat={true}
                         rotation={smoothHeading}
                         image={require("../../assets/images/NavegadorDaTelaHome.png")}
                     />
 
-                    {/* Rastro do percurso já feito (azul) */}
+                    {/* Rastro azul — percurso já feito */}
                     {routeCoords.length > 1 && (
                         <Polyline
                             coordinates={routeCoords}
@@ -383,8 +430,8 @@ async function handleAbandonarCorrida() {
                         />
                     )}
 
-                    {/* Traçado guia pelas ruas até o destino (verde) */}
-                    {rotaGuiaValid.length > 1 && (
+                    {/* Rota guia verde — ponto turístico */}
+                    {rotaGuiaValid.length > 1 && !corridaCapturarId && (
                         <Polyline
                             coordinates={rotaGuiaValid}
                             strokeColor="#22C3A3"
@@ -393,24 +440,28 @@ async function handleAbandonarCorrida() {
                         />
                     )}
 
-                    {/* Marcador do ponto turístico de destino */}
-                    {pontoDestino && (
-                        <Marker
-                            coordinate={pontoDestino}
-                            title={pontoNome}
-                            pinColor="#22C3A3"
+                    {/* Rota tracejada do território a capturar/recuperar */}
+                    {rotaCapturarValid.length > 1 && (
+                        <Polyline
+                            coordinates={rotaCapturarValid}
+                            strokeColor={corTracejadoCaptura}
+                            strokeWidth={10}
+                            lineDashPattern={[14, 7]}
                         />
+                    )}
+
+                    {/* Marcador destino ponto turístico */}
+                    {pontoDestino && !corridaCapturarId && (
+                        <Marker coordinate={pontoDestino} title={pontoNome} pinColor="#22C3A3" />
                     )}
                 </MapView>
             )}
 
             <View style={styles.panel}>
-                {/* Distância restante até o destino */}
-                {pontoDestino && distRestante !== null && (
-                    <View style={{
-                        backgroundColor: "#E1F5EE", borderRadius: 10,
-                        padding: 8, marginBottom: 8, alignItems: "center",
-                    }}>
+
+                {/* Distância restante até ponto turístico */}
+                {pontoDestino && distRestante !== null && !corridaCapturarId && (
+                    <View style={{ backgroundColor: "#E1F5EE", borderRadius: 10, padding: 8, marginBottom: 8, alignItems: "center" }}>
                         <Text style={{ color: "#0F6E56", fontWeight: "600", fontSize: 13 }}>
                             📍 {distRestante < 1000
                                 ? `${Math.round(distRestante)}m até ${pontoNome}`
@@ -419,19 +470,26 @@ async function handleAbandonarCorrida() {
                     </View>
                 )}
 
-                {/* Balão da IA */}
-                {(iaMsg || iaLoading) && (
+                {/* Balão ponto turístico detectado */}
+                {pontoAtivo && (
                     <View style={{
-                        backgroundColor: "#1a58e9", borderRadius: 12,
-                        padding: 12, marginBottom: 10, marginHorizontal: 4,
+                        backgroundColor: "#1a58e9", borderRadius: 12, padding: 12,
+                        marginBottom: 10, marginHorizontal: 4, flexDirection: "row", alignItems: "center", gap: 8,
                     }}>
-                        <Text style={{ color: "#fff", fontSize: 13, fontStyle: "italic" }}>
-                            {iaLoading ? "🤖 Gerando mensagem..." : `🤖 ${iaMsg}`}
-                            console.log("IA:", iaMsg);
-                        </Text>
+                        <Text style={{ fontSize: 20 }}>🗺️</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: "#fff", fontSize: 11, opacity: 0.8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                                Ponto turístico
+                            </Text>
+                            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>{pontoAtivo}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setPontoAtivo(null)}>
+                            <Feather name="x" size={18} color="#fff" />
+                        </TouchableOpacity>
                     </View>
                 )}
 
+                {/* Métricas */}
                 <View style={styles.metricsRow}>
                     <View style={styles.metric}>
                         <Text style={styles.metricValue}>{(distanceMeters / 1000).toFixed(2)}</Text>
@@ -446,6 +504,8 @@ async function handleAbandonarCorrida() {
                         <Text style={styles.metricLabel}>pace</Text>
                     </View>
                 </View>
+
+                {/* Botões */}
                 <View style={styles.buttonsRow}>
                     <TouchableOpacity style={[styles.btn, styles.btnPause]} onPress={handlePauseResume}>
                         <Text style={styles.btnText}>{status === "running" ? "  Pausar" : "  Retomar"}</Text>
