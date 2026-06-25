@@ -1,4 +1,3 @@
-import Feather from '@expo/vector-icons/Feather';
 import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
 import { getAuth } from "firebase/auth";
@@ -68,9 +67,10 @@ async function atualizarSequencia(uid: string) {
         ontem.setDate(ontem.getDate() - 1);
         const ontemStr = ontem.toISOString().split("T")[0];
         const correuOntem = diasCorridos.includes(ontemStr);
+        const sequenciaQuebrada: boolean = data.sequenciaQuebrada ?? false;
 
         const sequenciaAtual: number = data.sequenciaAtual ?? 0;
-        const novaSequencia = correuOntem ? sequenciaAtual + 1 : 1;
+        const novaSequencia = correuOntem && !sequenciaQuebrada ? sequenciaAtual + 1 : 1;
         const maiorSequencia: number = data.maiorSequencia ?? 0;
         const novaMaior = Math.max(maiorSequencia, novaSequencia);
 
@@ -78,9 +78,30 @@ async function atualizarSequencia(uid: string) {
             diasCorridos: [...diasCorridos, hoje],
             sequenciaAtual: novaSequencia,
             maiorSequencia: novaMaior,
+            sequenciaQuebrada: false,
         });
     } catch (e) {
         console.error("Erro ao atualizar sequência:", e);
+    }
+}
+
+async function resetSequenciaAbandonada(uid: string) {
+    try {
+        const uRef = doc(db, "usuarios", uid);
+        const uSnap = await getDoc(uRef);
+        const data = uSnap.data();
+        if (!data) return;
+
+        const hoje = dataHoje();
+        const diasCorridos: string[] = data.diasCorridos ?? [];
+        if (diasCorridos.includes(hoje)) return; // Já finalizou uma corrida hoje
+
+        await updateDoc(uRef, {
+            sequenciaAtual: 0,
+            sequenciaQuebrada: true,
+        });
+    } catch (e) {
+        console.error("Erro ao resetar sequência por abandono:", e);
     }
 }
 
@@ -123,6 +144,7 @@ export default function Correndo() {
     const mapRef = useRef<MapView>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const statusRef = useRef<RunStatus>("running");
+    const corridaFinalizadaRef = useRef(false);
     const distanceRef = useRef(0);
     const lastNarratedKm = useRef(0);
 
@@ -278,6 +300,7 @@ async function handleFinish() {
         });
 
         await atualizarSequencia(uid);
+        corridaFinalizadaRef.current = true;
 
         // ✅ LINHA NOVA — verifica e desbloqueia conquistas
         await verificarConquistas(uid, {
@@ -302,6 +325,22 @@ async function handleFinish() {
         setSaving(false);
     }
 }
+
+async function handleAbandonarCorrida() {
+    const uid = getAuth().currentUser?.uid;
+    if (!uid) return;
+    await resetSequenciaAbandonada(uid);
+}
+
+    useEffect(() => {
+        return () => {
+            const uid = getAuth().currentUser?.uid;
+            if (!uid) return;
+            if (!corridaFinalizadaRef.current) {
+                resetSequenciaAbandonada(uid);
+            }
+        };
+    }, []);
 
     return (
         <View style={styles.container}>
