@@ -85,7 +85,7 @@ export default function CustomDrawer(props: any) {
 
           <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(drawer)/pontosTuristicos')}>
             <View style={styles.menuIconWrapper}><Ionicons name="location-outline" size={22} color="#22C3A3" /></View>
-            <Text style={styles.menuText}>Pontos Turísticos</Text>
+            <Text style={styles.menuText}>Meus Pontos Turísticos</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(drawer)/historico')}>

@@ -1,20 +1,9 @@
-/**
- * SequenciaStreak.tsx
- *
- * Componente reutilizável de sequência de dias (estilo Duolingo).
+/*
  * Mostra os últimos 7 dias, destaca dias completados e a sequência atual.
- *
- * USO:
- *   import SequenciaStreak from "@/components/SequenciaStreak";
  *
  *   // Básico — busca dados do Firestore automaticamente
  *   <SequenciaStreak uid={uid} />
  *
- *   // Passando dados manualmente
- *   <SequenciaStreak
- *     uid={uid}
- *     sequenciaAtual={7}
- *     diasCompletos={["2026-04-01", "2026-04-02", "2026-04-05"]}
  *   />
  *
  * FIRESTORE:
@@ -228,14 +217,14 @@ function ModalStreak({
           <Text style={[styles.modalNumero, { color: corPrimaria }]}>{sequencia}</Text>
           <Text style={styles.modalSubtitulo}>dias seguidos</Text>
           <Text style={styles.modalDesc}>
-            Incrível! Continue correndo para manter sua sequência.
+            Incrível! Continue correndo para manter e aumentar sua sequência.
           </Text>
 
           <TouchableOpacity
             style={[styles.modalBtn, { backgroundColor: corPrimaria }]}
             onPress={onFechar}
           >
-            <Text style={styles.modalBtnText}>Continuar 💪</Text>
+            <Text style={styles.modalBtnText}>Continuar </Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
