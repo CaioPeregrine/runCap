@@ -151,7 +151,6 @@ export default function Correndo() {
 
     statusRef.current = status;
 
-    // Audio guide
     useEffect(() => {
         setPontoDetectadoCallback((nome) => {
             setPontoAtivo(nome);
@@ -161,13 +160,11 @@ export default function Correndo() {
         return () => { stopAudioGuide().catch(() => {}); };
     }, []);
 
-    // Timer
     useEffect(() => {
         timerRef.current = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, []);
 
-    // Posição inicial
     useEffect(() => {
         (async () => {
             const { status: perm } = await Location.requestForegroundPermissionsAsync();
@@ -186,7 +183,6 @@ export default function Correndo() {
         })();
     }, []);
 
-    // Bússola suavizada
     useEffect(() => {
         let subscription: Location.LocationSubscription | null = null;
         (async () => {
@@ -203,7 +199,6 @@ export default function Correndo() {
         return () => subscription?.remove();
     }, []);
 
-    // GPS contínuo
     useEffect(() => {
         Location.watchPositionAsync(
             { accuracy: Location.Accuracy.Highest, timeInterval: 1000, distanceInterval: 1 },
@@ -234,7 +229,6 @@ export default function Correndo() {
         );
     }, []);
 
-    // Reset sequência ao abandonar
     useEffect(() => {
         return () => {
             const uid = getAuth().currentUser?.uid;
@@ -285,7 +279,6 @@ export default function Correndo() {
                 criadoEm:        serverTimestamp(),
             });
 
-            // Se estava capturando/recuperando território, atualiza no Firestore
             if (corridaCapturarId) {
                 const corridaRef = doc(db, "corridas", corridaCapturarId);
                 const corridaSnap = await getDoc(corridaRef);
@@ -305,7 +298,6 @@ export default function Correndo() {
             await atualizarSequencia(uid);
             corridaFinalizadaRef.current = true;
 
-            // Verifica e desbloqueia conquistas por nível
             const nivelAtual = userData?.nivel ?? 1;
             await verificarConquistasPorNivel(uid, nivelAtual);
 
@@ -399,7 +391,6 @@ export default function Correndo() {
                 </MapView>
             )}
 
-            {/* ✅ Painel verde claro */}
             <View style={[styles.panel, { backgroundColor: "#D4F5E9" }]}>
 
                 {pontoDestino && distRestante !== null && !corridaCapturarId && (
