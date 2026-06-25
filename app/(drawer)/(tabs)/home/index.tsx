@@ -3,7 +3,7 @@ import { DrawerActions, useNavigation } from "@react-navigation/native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { getAuth } from "firebase/auth";
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -92,14 +92,12 @@ class KalmanFilter {
   init(v: number) { this.x = v; }
 }
 
-// Avatar marker com pulso de opacidade — sempre visível
 const AvatarMarker = React.memo(({ corrida, selecionada, onPress }: {
   corrida: Corrida; selecionada: boolean; onPress: () => void;
 }) => {
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Pulso de opacidade contínuo em todas as corridas
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(opacityAnim, { toValue: 0.4, duration: 900, useNativeDriver: true }),
@@ -123,7 +121,6 @@ const AvatarMarker = React.memo(({ corrida, selecionada, onPress }: {
       <Animated.View style={[
         local.avatarMarkerWrap,
         { borderColor: selecionada ? CORES.branco : corBorda },
-        // Quando selecionado: opacidade fixa em 1, borda branca grossa
         selecionada ? { opacity: 1, borderWidth: 4 } : { opacity: opacityAnim, borderWidth: 3 },
       ]}>
         {corrida.avatarOriginal
@@ -156,19 +153,23 @@ export default function Home() {
   const TOGGLE_WIDTH = 320;
   const PILL_WIDTH   = (TOGGLE_WIDTH - 8) / 2;
 
-  const kalmanLat     = useRef(new KalmanFilter());
-  const kalmanLng     = useRef(new KalmanFilter());
-  const iniciouGPS    = useRef(false);
-  const mapRef        = useRef<MapView>(null);
+  const kalmanLat  = useRef(new KalmanFilter());
+  const kalmanLng  = useRef(new KalmanFilter());
+  const iniciouGPS = useRef(false);
+  const mapRef     = useRef<MapView>(null);
 
-  const navigation    = useNavigation();
-  const currentUser   = getAuth().currentUser;
+  const navigation  = useNavigation();
+  const currentUser = getAuth().currentUser;
   const { migrarKmAntigos } = useConquistas();
-  const insets        = useSafeAreaInsets();
+  const insets      = useSafeAreaInsets();
   const BOTTOM_OFFSET = TAB_BAR_HEIGHT + insets.bottom;
 
-  useEffect(() => { if (currentUser?.uid) migrarKmAntigos(currentUser.uid); }, []);
+  // Verifica conquistas ao abrir o app
+  useEffect(() => {
+    if (currentUser?.uid) migrarKmAntigos(currentUser.uid);
+  }, []);
 
+  // GPS inicial
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -186,6 +187,7 @@ export default function Home() {
     })();
   }, []);
 
+  // GPS contínuo
   useEffect(() => {
     let headingSub: Location.LocationSubscription | null = null;
     Location.watchPositionAsync(
@@ -202,45 +204,55 @@ export default function Home() {
     return () => { headingSub?.remove(); };
   }, []);
 
+  // ✅ CORRIGIDO: busca TODAS as corridas, não só de amigos
   useEffect(() => {
     if (!currentUser) return;
     (async () => {
       try {
-        const userSnap = await getDoc(doc(db, "usuarios", currentUser.uid));
-        const amigos: string[] = userSnap.data()?.amigos ?? [];
-        const ids = Array.from(new Set([currentUser.uid, ...amigos]));
+        // Busca todas as corridas do banco
+        const corridasSnap = await getDocs(collection(db, "corridas"));
 
+        // Coleta UIDs únicos para buscar perfis
+        const uidsUnicos = new Set<string>();
+        corridasSnap.forEach(d => {
+          if (d.data().rota?.length) uidsUnicos.add(d.data().uid);
+        });
+
+        // Busca perfil de cada corredor
         const perfis: Record<string, { nome: string; avatarUrl?: string; corRota: string }> = {};
-        await Promise.all(ids.map(async (uid) => {
+        await Promise.all(Array.from(uidsUnicos).map(async (uid) => {
           const snap = await getDoc(doc(db, "usuarios", uid));
           const d = snap.data();
-          perfis[uid] = { nome: d?.nome || "Corredor", avatarUrl: d?.avatarUrl, corRota: d?.corRota || CORES.fallback };
+          perfis[uid] = {
+            nome: d?.nome || "Corredor",
+            avatarUrl: d?.avatarUrl,
+            corRota: d?.corRota || CORES.fallback,
+          };
         }));
 
+        // Monta lista final
         const lista: Corrida[] = [];
-        await Promise.all(ids.map(async (uid) => {
-          const snap = await getDocs(query(collection(db, "corridas"), where("uid", "==", uid)));
-          snap.forEach((d) => {
-            const data = d.data();
-            if (!data.rota?.length) return;
-            lista.push({
-              id: d.id, uid, rota: data.rota,
-              distancia_km: data.distancia_km || 0,
-              tempo_formatado: data.tempo_formatado || "00:00",
-              pace: data.pace || "--:--",
-              criadoEm: data.criadoEm,
-              nomeOriginal: perfis[uid]?.nome || "Corredor",
-              avatarOriginal: perfis[uid]?.avatarUrl,
-              corOriginal: data.corRota || perfis[uid]?.corRota || CORES.fallback,
-              capturadaPor: data.capturadaPor,
-              capturadaPorNome: data.capturadaPorNome,
-              capturadaPorCor: data.capturadaPorCor || CORES.fallback,
-              historicoCaptura: data.historicoCaptura || [],
-              centro: centroDaRota(data.rota),
-              fechada: isAreaFechada(data.rota),
-            });
+        corridasSnap.forEach((d) => {
+          const data = d.data();
+          if (!data.rota?.length) return;
+          const uid = data.uid;
+          lista.push({
+            id: d.id, uid, rota: data.rota,
+            distancia_km: data.distancia_km || 0,
+            tempo_formatado: data.tempo_formatado || "00:00",
+            pace: data.pace || "--:--",
+            criadoEm: data.criadoEm,
+            nomeOriginal: perfis[uid]?.nome || "Corredor",
+            avatarOriginal: perfis[uid]?.avatarUrl,
+            corOriginal: data.corRota || perfis[uid]?.corRota || CORES.fallback,
+            capturadaPor: data.capturadaPor,
+            capturadaPorNome: data.capturadaPorNome,
+            capturadaPorCor: data.capturadaPorCor || CORES.fallback,
+            historicoCaptura: data.historicoCaptura || [],
+            centro: centroDaRota(data.rota),
+            fechada: isAreaFechada(data.rota),
           });
-        }));
+        });
 
         lista.sort((a, b) => {
           const ta = a.criadoEm?.toDate?.()?.getTime?.() ?? 0;
@@ -248,7 +260,9 @@ export default function Home() {
           return tb - ta;
         });
         setCorridas(lista);
-      } catch (e) { console.error("Erro ao carregar corridas:", e); }
+      } catch (e) {
+        console.error("Erro ao carregar corridas:", e);
+      }
     })();
   }, [currentUser]);
 
@@ -264,16 +278,16 @@ export default function Home() {
     return s;
   }, [corridas]);
 
-  const corridasGlobal  = useMemo(() => corridas, [corridas]);
-  const corridasMinhas  = useMemo(() => currentUser ? corridas.filter(c => c.uid === currentUser.uid) : [], [corridas, currentUser]);
+  const corridasGlobal   = useMemo(() => corridas, [corridas]);
+  const corridasMinhas   = useMemo(() => currentUser ? corridas.filter(c => c.uid === currentUser.uid) : [], [corridas, currentUser]);
   const corridasVisiveis = modo === "global" ? corridasGlobal : corridasMinhas;
 
   const ranking = useMemo(() => {
     const mapa: Record<string, { nome: string; cor: string; total: number }> = {};
     corridas.forEach((c) => {
-      const uid = c.capturadaPor || c.uid;
+      const uid  = c.capturadaPor || c.uid;
       const nome = c.capturadaPorNome || c.nomeOriginal;
-      const cor = c.capturadaPorCor || c.corOriginal;
+      const cor  = c.capturadaPorCor || c.corOriginal;
       if (!mapa[uid]) mapa[uid] = { nome, cor, total: 0 };
       mapa[uid].total++;
     });
@@ -415,7 +429,6 @@ export default function Home() {
         </View>
       </View>
 
-      {/* Legenda */}
       {modo === "global" && (
         <View style={local.legendaWrap}>
           <View style={local.legendaItem}><View style={[local.legendaDot, { backgroundColor: CORES.verde }]} /><Text style={local.legendaTxt}>Dominando</Text></View>

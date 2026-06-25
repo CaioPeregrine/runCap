@@ -80,7 +80,7 @@ async function atualizarSequencia(uid: string) {
 }
 
 export default function Correndo() {
-    const { verificarConquistas } = useConquistas();
+    const { verificarConquistasPorNivel } = useConquistas();
     const params = useLocalSearchParams();
 
     // ── Params do destino (ponto turístico) ───────────────────────────────────
@@ -280,13 +280,8 @@ export default function Correndo() {
             }
 
             await atualizarSequencia(uid);
-            await verificarConquistas(uid, {
-                distancia_km: distanceMeters / 1000,
-                pace,
-                rotaFechada: false,
-                pontosVisitados: [],
-            });
-
+const nivelAtual = userSnap.data()?.nivel ?? 1;
+await verificarConquistasPorNivel(uid, nivelAtual)
             router.replace({
                 pathname: "./corridaConcluida",
                 params: {

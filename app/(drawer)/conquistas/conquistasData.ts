@@ -1,11 +1,3 @@
-/**
- * conquistasData.ts
- *
- * 10 conquistas — uma por nível (1 a 10).
- * Nível 1 → desbloqueada no primeiro login.
- * Níveis 2-10 → desbloqueadas ao completar corridas de Rotas Sugeridas.
- */
-
 export interface Conquista {
   id: string;
   titulo: string;
@@ -16,78 +8,84 @@ export interface Conquista {
 
 export const conquistasData: Conquista[] = [
   {
-    id: "cq_nivel_1",
+    id: "cq_nivel_1",        // desbloqueada ao criar conta
     titulo: "Bem-vindo, corredor!",
-    descricao: "Você criou sua conta e deu o primeiro passo na sua jornada.",
+    descricao: "Você criou sua conta e deu o primeiro passo.",
     icone: "👟",
     nivelRequerido: 1,
   },
   {
-    id: "cq_nivel_2",
+    id: "primeira_corrida",  // ← ID que já existe no seu Firestore
     titulo: "Primeiros passos",
-    descricao: "Completou sua primeira corrida e ganhou 200 XP.",
+    descricao: "Completou sua primeira corrida.",
     icone: "🏃",
     nivelRequerido: 2,
   },
   {
-    id: "cq_nivel_3",
-    titulo: "Ritmo constante",
-    descricao: "Você está pegando o ritmo. Continue assim!",
+    id: "primeiro_km",       // ← ID que já existe no seu Firestore
+    titulo: "Primeiro quilômetro",
+    descricao: "Correu seu primeiro km.",
+    icone: "📍",
+    nivelRequerido: 2,
+  },
+  {
+    id: "cinco_km",          // ← ID que já existe no seu Firestore
+    titulo: "5 km completos",
+    descricao: "Você correu 5 km no total.",
     icone: "🔥",
     nivelRequerido: 3,
   },
   {
-    id: "cq_nivel_4",
-    titulo: "Na trilha certa",
-    descricao: "Já acumulou 600 XP explorando Manaus.",
-    icone: "🗺️",
-    nivelRequerido: 4,
+    id: "sequencia_3",       // ← ID que já existe no seu Firestore
+    titulo: "Sequência de 3 dias",
+    descricao: "Correu 3 dias seguidos.",
+    icone: "📅",
+    nivelRequerido: 3,
   },
   {
     id: "cq_nivel_5",
     titulo: "Corredor dedicado",
-    descricao: "Metade do caminho percorrido. Você é dedicado!",
+    descricao: "Metade do caminho percorrido.",
     icone: "⭐",
     nivelRequerido: 5,
   },
   {
     id: "cq_nivel_6",
     titulo: "Maratonista em formação",
-    descricao: "Mais de 1000 XP acumulados. A maratona espera por você.",
+    descricao: "Mais de 1000 XP acumulados.",
     icone: "🏅",
     nivelRequerido: 6,
   },
   {
     id: "cq_nivel_7",
     titulo: "Explorador da Amazônia",
-    descricao: "Você explorou as rotas de Manaus como um verdadeiro aventureiro.",
+    descricao: "Explorou as rotas de Manaus.",
     icone: "🌿",
     nivelRequerido: 7,
   },
   {
     id: "cq_nivel_8",
     titulo: "Atleta urbano",
-    descricao: "Suas corridas marcam presença pelas ruas de Manaus.",
+    descricao: "Suas corridas marcam presença pelas ruas.",
     icone: "🏙️",
     nivelRequerido: 8,
   },
   {
     id: "cq_nivel_9",
     titulo: "Quase no topo",
-    descricao: "Só falta um nível para a conquista máxima. Não pare agora!",
+    descricao: "Só falta um nível!",
     icone: "🚀",
     nivelRequerido: 9,
   },
   {
     id: "cq_nivel_10",
     titulo: "Lenda de Manaus",
-    descricao: "Você chegou ao nível máximo. Uma verdadeira lenda das corridas!",
+    descricao: "Você chegou ao nível máximo.",
     icone: "🏆",
     nivelRequerido: 10,
   },
 ];
 
-/** Conquista de um nível específico (ou null). */
 export function conquistaDoNivel(nivel: number): Conquista | null {
   return conquistasData.find((c) => c.nivelRequerido === nivel) ?? null;
 }
